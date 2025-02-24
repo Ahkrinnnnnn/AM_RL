@@ -1,0 +1,3 @@
+deprecated/
+**/__pycache__/
+*.pyc
