@@ -1,4 +1,4 @@
-deprecated/
+**/*.egg-info/
 **/__pycache__/
 *.pyc
 .vscode/
