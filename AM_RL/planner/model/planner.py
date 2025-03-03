@@ -9,9 +9,9 @@ class PlannerNetwork(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(state_dim, 256),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(256, 256),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(256, action_dim)
         )
 

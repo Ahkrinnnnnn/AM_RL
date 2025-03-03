@@ -51,11 +51,11 @@ def load_data(dataset_path):
         20, 20, 20, 
     ])
 
-    np.savez(
-        norm_params_save_path, 
-        states_mid=states_mid, states_range=states_range,
-        action_mid=action_mid, action_range=action_range
-    )
+    # np.savez(
+    #     norm_params_save_path, 
+    #     states_mid=states_mid, states_range=states_range,
+    #     action_mid=action_mid, action_range=action_range
+    # )
 
     states, actions = [], []
     for trajectory in dataset:
