@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from stable_baselines3.dqn.policies import DQNPolicy
+from stable_baselines3.td3.policies import TD3Policy
 
 class PlannerNetwork(nn.Module):
     """Input: obj_pos + cur_state; Output: next_planning_state"""
@@ -19,17 +19,10 @@ class PlannerNetwork(nn.Module):
         return self.net(x)
 
 
-class CustomDQNPolicy(DQNPolicy):
-    
-    def _build_q_net(self):
-        input_dim = 22
-        output_dim = 19
-        self.q_net = PlannerNetwork(input_dim, output_dim)
-        self.q_net_target = PlannerNetwork(input_dim, output_dim)
-    
-    def forward(self, obs, deterministic: bool = True):
-        q_values = self.q_net(obs)
-        if deterministic:
-            return torch.argmax(q_values, dim=1)
-        else:
-            return q_values
+class CustomPlannerTD3Policy(TD3Policy):
+
+    def _build_actor(self) -> None:
+        input_dim = self.observation_space.shape[0]
+        output_dim = self.action_space.shape[0]
+        self.actor = PlannerNetwork(input_dim, output_dim)
+        self.actor_target = PlannerNetwork(input_dim, output_dim)

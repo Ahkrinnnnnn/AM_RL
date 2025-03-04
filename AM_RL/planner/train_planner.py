@@ -5,7 +5,6 @@ from isaaclab.app import AppLauncher
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with Stable-Baselines3.")
-parser.add_argument("--test_pretrain", type=bool, default=False, help="Test the pretrained model.")
 parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
 parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
 parser.add_argument("--video_interval", type=int, default=2000, help="Interval between video recordings (in steps).")
@@ -37,7 +36,7 @@ import random
 from datetime import datetime
 
 from isaaclab_rl.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
-from stable_baselines3 import PPO
+from stable_baselines3 import TD3
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.logger import configure
 from stable_baselines3.common.vec_env import VecNormalize
@@ -55,15 +54,12 @@ from isaaclab.utils.io import dump_pickle, dump_yaml
 import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils.hydra import hydra_task_config
 
+import AM_RL
+
 
 @hydra_task_config(args_cli.task, "sb3_cfg_entry_point")
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agent_cfg: dict):
     """Train with stable-baselines agent."""
-    # if args_cli.test_pretrain == True:
-
-    #     return
-
-
     # randomly sample a seed if seed = -1
     if args_cli.seed == -1:
         args_cli.seed = random.randint(0, 10000)
@@ -82,7 +78,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     # directory for logging into
     run_info = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    log_root_path = os.path.abspath(os.path.join("logs", "sb3", args_cli.task))
+    log_root_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/planner/logs/"
     print(f"[INFO] Logging experiment in directory: {log_root_path}")
     print(f"Exact experiment name requested from command line: {run_info}")
     log_dir = os.path.join(log_root_path, run_info)
@@ -132,7 +128,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         )
 
     # create agent from stable baselines
-    agent = PPO(policy_arch, env, verbose=1, **agent_cfg)
+    agent = TD3(policy_arch, env, verbose=1, **agent_cfg)
     # configure the logger
     new_logger = configure(log_dir, ["stdout", "tensorboard"])
     agent.set_logger(new_logger)

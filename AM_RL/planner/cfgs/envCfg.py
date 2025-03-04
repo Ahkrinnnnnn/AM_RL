@@ -2,18 +2,41 @@ import random
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
-from isaaclab.envs import ManagerBasedRLEnvCfg, mdp
-from isaaclab.managers import EventTermCfg as EventTerm
-from isaaclab.managers import ObservationGroupCfg as ObsGroup
-from isaaclab.managers import ObservationTermCfg as ObsTerm
-from isaaclab.managers import RewardTermCfg as RewTerm
-from isaaclab.managers import SceneEntityCfg
-from isaaclab.managers import TerminationTermCfg as DoneTerm
+from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedRLEnvCfg, mdp
+from isaaclab.managers import (
+    ActionTermCfg as ActionTerm,
+    EventTermCfg as EventTerm,
+    ObservationGroupCfg as ObsGroup,
+    ObservationTermCfg as ObsTerm,
+    RewardTermCfg as RewTerm,
+    SceneEntityCfg,
+    TerminationTermCfg as DoneTerm
+)
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
 
 from robotCfg import *
 from rewardCfg import RewardFunctions
+
+##
+# Customize functions
+##
+
+
+class CustomFunctions:
+
+    def robot_out_of_bounds(env: ManagerBasedRLEnv, asset_name: str, bounds: list):
+        x, y, z = env.scene[asset_name].data.root_pos_w
+        
+        if (bounds[0][0] < x < bounds[0][1] and 
+            bounds[1][0] < y < bounds[1][1] and
+            bounds[2][0] < z < bounds[2][1]):
+            return True
+        else:
+            return False
+
+    def plan_next_point(env: ManagerBasedRLEnv):
+        return env.plan_next_point()
 
 ##
 # Scene definition
@@ -57,7 +80,9 @@ class UamSceneCfg(InteractiveSceneCfg):
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    joint_effort = mdp.actions.JointEffortActionCfg(asset_name="robot", joint_names=rotorNames+jointNames)
+    planning_state = ActionTerm(
+        func=CustomFunctions.plan_next_point
+    )
 
 
 @configclass
@@ -105,10 +130,6 @@ class RewardsCfg:
         params={"asset_name": eeName,
                 "target_name": "objective"}
     )
-    track_dis = RewTerm(
-        func=RewardFunctions.track_dist_reward,
-        params={"asset_name": "robot"}
-    )
     time = RewTerm(func=RewardFunctions.time_reward)
     capture = RewTerm(
         func=RewardFunctions.is_captured_reward,
@@ -127,10 +148,13 @@ class TerminationsCfg:
     # (1) Time out
     time_out = DoneTerm(func=mdp.terminations.time_out, time_out=True)
     # (2) AM out of bounds
-    # am_out_of_bounds = DoneTerm(
-    #     func=mdp.joint_pos_out_of_manual_limit,
-    #     params={"asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"]), "bounds": (-3.0, 3.0)},
-    # )
+    am_out_of_bounds = DoneTerm(
+        func=CustomFunctions.robot_out_of_bounds,
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "bounds": [[-10, 10], [-10, 10], [0, 10]]
+        }
+    )
 
 
 ##
@@ -152,6 +176,9 @@ class UamEnvCfg(ManagerBasedRLEnvCfg):
     rewards: RewardsCfg = RewardsCfg()
     terminations: TerminationsCfg = TerminationsCfg()
 
+    def __init__(self):
+        super().__init__()
+
     # Post initialization
     def __post_init__(self) -> None:
         """Post initialization."""
@@ -163,3 +190,31 @@ class UamEnvCfg(ManagerBasedRLEnvCfg):
         # simulation settings
         self.sim.dt = 1 / 120
         self.sim.render_interval = self.decimation
+
+
+##
+# Customize environment
+##
+
+
+class CustomEnv(ManagerBasedRLEnv):
+
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.next_state = None
+    
+    def reset(self):
+        state = super().reset()
+        self.last_state = state
+        return state
+
+    def step(self, action):
+        observation, reward, terminated, truncated, info = super().step(action)
+        self.next_state = self.plan_next_point(observation)
+
+        return observation, reward, terminated, truncated, info
+    
+    def plan_next_point(self, observation):
+
+        return 
