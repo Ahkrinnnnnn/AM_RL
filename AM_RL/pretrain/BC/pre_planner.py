@@ -31,6 +31,7 @@ def load_data(dataset_path):
         20, 20, 20, 
         3.3415926535897932, 3.3415926535897932, 3.3415926535897932,
         20, 20, 20, 
+        
         20, 20, 20
     ])
 
@@ -61,8 +62,8 @@ def load_data(dataset_path):
     for trajectory in dataset:
         for i in range(len(trajectory["planned_path"])-1):
             s = np.concatenate((
-                    trajectory["target_pos"],
-                    trajectory["planned_path"][i]), axis=0
+                    trajectory["planned_path"][i],
+                    trajectory["target_pos"]), axis=0
                 )
             a = trajectory["planned_path"][i+1]
             if all(-1 <= x <= 1 for x in (s-states_mid)/states_range):

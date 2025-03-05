@@ -1,0 +1,20 @@
+agent:
+  policy: "CustomPlannerTD3Policy"
+  learning_rate: 0.001
+  batch_size: 100
+  n_steps: 2048
+  n_timesteps: 100000
+  gamma: 0.99
+  tau: 0.005
+  train_freq: 1
+  gradient_steps: 1
+  action_noise: 0.1
+  optimize_memory_usage: False
+  create_eval_env: False
+  seed: 42
+  device: "cuda"
+  verbose: 1
+  tensorboard_log: "logs/tensorboard"
+  normalize_input: True
+  normalize_value: True
+  clip_obs: True

@@ -1,5 +1,8 @@
+import os
 import random
 
+import numpy as np
+import torch
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedRLEnvCfg, mdp
@@ -15,8 +18,17 @@ from isaaclab.managers import (
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
 
+import AM_RL
 from robotCfg import *
-from rewardCfg import RewardFunctions
+from rewardCfg import *
+
+norm_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/planner/model/pnorm_params.npz"
+norm_params = np.load(norm_path)
+
+states_mid = norm_params["states_mid"]
+states_range = norm_params["states_range"]
+action_mid = norm_params["action_mid"]
+action_range = norm_params["action_range"]
 
 ##
 # Customize functions
@@ -25,18 +37,44 @@ from rewardCfg import RewardFunctions
 
 class CustomFunctions:
 
+    @staticmethod
     def robot_out_of_bounds(env: ManagerBasedRLEnv, asset_name: str, bounds: list):
         x, y, z = env.scene[asset_name].data.root_pos_w
         
         if (bounds[0][0] < x < bounds[0][1] and 
             bounds[1][0] < y < bounds[1][1] and
             bounds[2][0] < z < bounds[2][1]):
-            return True
-        else:
             return False
+        else:
+            return True
+        
+    @staticmethod
+    def set_robot_state(env: ManagerBasedRLEnv, asset_name: str, action: torch.Tensor):
+        action = CustomFunctions.inormalize_action(action)
+        robot = env.scene[asset_name]
+        robot.write_root_link_state_to_sim(action[:13])
+        robot.write_joint_state_to_sim(action[13:16], action[16:19], jointNames)
 
-    def plan_next_point(env: ManagerBasedRLEnv):
-        return env.plan_next_point()
+    @staticmethod
+    def finish_task(asset_cfg: SceneEntityCfg):
+        final_dist = torch.linalg.vector_norm(
+            mdp.observations.root_pos_w(asset_cfg)-task_point,
+            ord=2
+        )
+        return final_dist < thresholdCfg["task_finished"]
+    
+    @staticmethod
+    def normalize_observation(obs):
+        return (obs - states_mid) / states_range
+    
+    @staticmethod
+    def inormalize_observation(norm_obs):
+        return norm_obs * states_range + states_mid
+    
+    @staticmethod
+    def inormalize_action(norm_action):
+        return norm_action * action_range + action_mid
+
 
 ##
 # Scene definition
@@ -81,7 +119,8 @@ class ActionsCfg:
     """Action specifications for the MDP."""
 
     planning_state = ActionTerm(
-        func=CustomFunctions.plan_next_point
+        func=CustomFunctions.set_robot_state,
+        params={"asset_name": "robot"}
     )
 
 
@@ -94,17 +133,18 @@ class ObservationsCfg:
         """Observations for policy group."""
 
         # observation terms (order preserved)
-        obj_pos = ObsTerm(func=mdp.observations.root_pos_w, params={"asset_cfg": SceneEntityCfg("objective")})
         base_pos = ObsTerm(func=mdp.observations.root_pos_w, params={"asset_cfg": SceneEntityCfg("robot")})
         base_quat = ObsTerm(func=mdp.observations.root_quat_w, params={"asset_cfg": SceneEntityCfg("robot")})
         base_lin_vel = ObsTerm(func=mdp.observations.root_lin_vel_w, params={"asset_cfg": SceneEntityCfg("robot")})
         base_ang_vel = ObsTerm(func=mdp.observations.root_ang_vel_w, params={"asset_cfg": SceneEntityCfg("robot")})
         joint_pos = ObsTerm(func=mdp.observations.joint_pos, params={"asset_cfg": SceneEntityCfg("robot", joint_names=jointNames)})
         joint_vel = ObsTerm(func=mdp.observations.joint_vel, params={"asset_cfg": SceneEntityCfg("robot", joint_names=jointNames)})
+        obj_pos = ObsTerm(func=mdp.observations.root_pos_w, params={"asset_cfg": SceneEntityCfg("objective")})
 
         def __post_init__(self) -> None:
             self.enable_corruption = False
             self.concatenate_terms = True
+            self.normalize_fn = CustomFunctions.normalize_observation
 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
@@ -127,18 +167,16 @@ class RewardsCfg:
 
     ee_dist = RewTerm(
         func=RewardFunctions.ee_dist_reward,
-        params={"asset_name": eeName,
-                "target_name": "objective"}
+        params={"asset_name": "robot", "ee_name": eeName}
     )
     time = RewTerm(func=RewardFunctions.time_reward)
-    capture = RewTerm(
+    is_captured = RewTerm(
         func=RewardFunctions.is_captured_reward,
-        params={"asset_name": "robot", "target_name": "objective", "threshold": 0.1}
+        params={"asset_name": "robot", "ee_name": eeName}
     )
-    collision = RewTerm(
-        func=RewardFunctions.collision_reward,
-        params={"asset_name": "robot"}
-    )
+    collision = RewTerm(func=RewardFunctions.collision_reward)
+    smooth = RewTerm(func=RewardFunctions.smoothness_reward)
+    task_dist = RewTerm(func=RewardFunctions.task_dist_reward)
 
 
 @configclass
@@ -151,9 +189,14 @@ class TerminationsCfg:
     am_out_of_bounds = DoneTerm(
         func=CustomFunctions.robot_out_of_bounds,
         params={
-            "asset_cfg": SceneEntityCfg("robot"),
+            "asset_cfg": "robot",
             "bounds": [[-10, 10], [-10, 10], [0, 10]]
         }
+    )
+    # (3) Task finished
+    task_finished = DoneTerm(
+        func=CustomFunctions.finish_task,
+        params={"asset_cfg": SceneEntityCfg("objective")}
     )
 
 
@@ -175,9 +218,6 @@ class UamEnvCfg(ManagerBasedRLEnvCfg):
     # MDP settings
     rewards: RewardsCfg = RewardsCfg()
     terminations: TerminationsCfg = TerminationsCfg()
-
-    def __init__(self):
-        super().__init__()
 
     # Post initialization
     def __post_init__(self) -> None:
@@ -202,19 +242,18 @@ class CustomEnv(ManagerBasedRLEnv):
     def __init__(self, cfg):
         super().__init__(cfg)
 
-        self.next_state = None
+        self.last_state = None
+        self.current_state = None
     
     def reset(self):
-        state = super().reset()
-        self.last_state = state
-        return state
+        observation = super().reset()
+        self.current_state = CustomFunctions.inormalize_observation(observation)
+        return observation
 
     def step(self, action):
+        self.last_state = self.current_state
+
         observation, reward, terminated, truncated, info = super().step(action)
-        self.next_state = self.plan_next_point(observation)
+        self.current_state = CustomFunctions.inormalize_observation(observation)
 
         return observation, reward, terminated, truncated, info
-    
-    def plan_next_point(self, observation):
-
-        return 

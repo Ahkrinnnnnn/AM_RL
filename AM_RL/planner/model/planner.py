@@ -3,7 +3,7 @@ import torch.nn as nn
 from stable_baselines3.td3.policies import TD3Policy
 
 class PlannerNetwork(nn.Module):
-    """Input: obj_pos + cur_state; Output: next_planning_state"""
+    """Input: cur_state + obj_pos; Output: next_planning_state"""
 
     def __init__(self, state_dim, action_dim):
         super().__init__()
@@ -26,3 +26,7 @@ class CustomPlannerTD3Policy(TD3Policy):
         output_dim = self.action_space.shape[0]
         self.actor = PlannerNetwork(input_dim, output_dim)
         self.actor_target = PlannerNetwork(input_dim, output_dim)
+
+        pretraining_path = "pretraining_planner.pth"
+        self.actor.load_state_dict(torch.load(pretraining_path, map_location=self.device))
+        self.actor_target.load_state_dict(torch.load(pretraining_path, map_location=self.device))
