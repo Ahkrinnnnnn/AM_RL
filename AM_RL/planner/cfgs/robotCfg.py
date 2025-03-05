@@ -18,8 +18,9 @@ eeName = "flying_arm_3__gripper"
 
 UAM_CFG = ArticulationCfg(
     spawn=sim_utils.UrdfFileCfg(
-        urdf_path=f"assets/urdf/{robotName}.urdf",
-        collision=True, 
+        asset_path=f"assets/urdf/{robotName}.urdf",
+        usd_dir=f"assets/usd/",
+        usd_file_name=f"{robotName}.usd"
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.1), rot=(0.0, 0.0, 0.0, 1.0),
@@ -42,10 +43,8 @@ UAM_CFG = ArticulationCfg(
             joint_names_expr=jointNames[-1],
             effort_limit=0.3, 
             velocity_limit=10000.0, 
-        ),
-        # "ee_actuator": 
-    },
-    name="robot"
+        )
+    }
 )
 
 """Configuration for a simple UAM robot."""

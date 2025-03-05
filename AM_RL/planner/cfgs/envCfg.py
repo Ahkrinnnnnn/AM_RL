@@ -7,7 +7,8 @@ import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedRLEnvCfg, mdp
 from isaaclab.managers import (
-    ActionTermCfg as ActionTerm,
+    ActionTerm,
+    ActionTermCfg,
     EventTermCfg as EventTerm,
     ObservationGroupCfg as ObsGroup,
     ObservationTermCfg as ObsTerm,
@@ -19,8 +20,8 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
 
 import AM_RL
-from robotCfg import *
-from rewardCfg import *
+from AM_RL.planner.cfgs.robotCfg import *
+from AM_RL.planner.cfgs.rewardCfg import *
 
 norm_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/planner/model/pnorm_params.npz"
 norm_params = np.load(norm_path)
@@ -47,13 +48,6 @@ class CustomFunctions:
             return False
         else:
             return True
-        
-    @staticmethod
-    def set_robot_state(env: ManagerBasedRLEnv, asset_name: str, action: torch.Tensor):
-        action = CustomFunctions.inormalize_action(action)
-        robot = env.scene[asset_name]
-        robot.write_root_link_state_to_sim(action[:13])
-        robot.write_joint_state_to_sim(action[13:16], action[16:19], jointNames)
 
     @staticmethod
     def finish_task(asset_cfg: SceneEntityCfg):
@@ -74,6 +68,19 @@ class CustomFunctions:
     @staticmethod
     def inormalize_action(norm_action):
         return norm_action * action_range + action_mid
+    
+
+    class ActionClass(ActionTerm):
+        def __init__(self, asset_name: str, params: dict):
+            super().__init__()
+            self.asset_name = asset_name
+            self.params = params
+
+        def execute(self, action):
+            action = CustomFunctions.inormalize_action(action)
+            robot = self.env.scene[self.asset_name]
+            robot.write_root_link_state_to_sim(action[:13])
+            robot.write_joint_state_to_sim(action[13:16], action[16:19], jointNames)
 
 
 ##
@@ -99,13 +106,10 @@ class UamSceneCfg(InteractiveSceneCfg):
 
     objective = AssetBaseCfg(
         prim_path="/World/Sphere",
-        spawn=sim_utils.SphereCfg(
-            radius=0.2,
-            pos=((random.random()-0.5)*20, (random.random()-0.5)*20, 0.1),
-            color=(1.0, 0.0, 0.0),
-            collision=True
-        ),
-        name="objective"
+        spawn=sim_utils.SphereCfg(radius=0.2),
+        init_state=AssetBaseCfg.InitialStateCfg(
+            pos=((random.random()-0.5)*20, (random.random()-0.5)*20, 0.1)
+        )
     )
 
 
@@ -118,9 +122,9 @@ class UamSceneCfg(InteractiveSceneCfg):
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    planning_state = ActionTerm(
-        func=CustomFunctions.set_robot_state,
-        params={"asset_name": "robot"}
+    planning_state = ActionTermCfg(
+        class_type=CustomFunctions.ActionClass,
+        asset_name={"asset_name": "robot"}
     )
 
 

@@ -50,17 +50,13 @@ from isaaclab.envs import (
 )
 from isaaclab.utils.dict import print_dict
 from isaaclab.utils.io import dump_pickle, dump_yaml
-
-import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils.hydra import hydra_task_config
 
 import AM_RL
+import AM_RL.planner.cfgs
 
 
-@hydra_task_config(args_cli.task, kwargs={
-    "env_cfg_entry_point": "cfgs.envCfg:UamEnvCfg",
-    "sb3_cfg_entry_point": "cfgs.TD3_cfg.yaml",
-})
+@hydra_task_config(args_cli.task, "sb3_cfg_entry_point")
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agent_cfg: dict):
     """Train with stable-baselines agent."""
     # randomly sample a seed if seed = -1

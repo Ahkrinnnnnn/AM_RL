@@ -15,7 +15,7 @@ thresholdCfg = {
     "angle_thresh": 0.1,
     "task_finished": 0.1
 }
-task_point = torch.tensor[0, 0, 0.5]
+task_point = torch.tensor([0, 0, 0.5])
 
 class RewardFunctions:
 
