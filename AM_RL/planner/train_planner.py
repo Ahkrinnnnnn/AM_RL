@@ -1,3 +1,5 @@
+# --task Isaac-UAM-Catch-Plan-v0 --num_envs 2 --headless --video
+
 import argparse
 import sys
 
@@ -30,7 +32,6 @@ simulation_app = app_launcher.app
 """Rest everything follows."""
 
 import gymnasium as gym
-import numpy as np
 import os
 import random
 from datetime import datetime
@@ -114,17 +115,6 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     # wrap around environment for stable baselines
     env = Sb3VecEnvWrapper(env)
-
-    if "normalize_input" in agent_cfg:
-        env = VecNormalize(
-            env,
-            training=True,
-            norm_obs="normalize_input" in agent_cfg and agent_cfg.pop("normalize_input"),
-            norm_reward="normalize_value" in agent_cfg and agent_cfg.pop("normalize_value"),
-            clip_obs="clip_obs" in agent_cfg and agent_cfg.pop("clip_obs"),
-            gamma=agent_cfg["gamma"],
-            clip_reward=np.inf,
-        )
 
     # create agent from stable baselines
     agent = TD3(policy_arch, env, verbose=1, **agent_cfg)

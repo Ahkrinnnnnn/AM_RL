@@ -1,9 +1,13 @@
 """Configuration for a UAM robot."""
 
+import os
 
 import isaaclab.sim as sim_utils
+from isaaclab.sim.converters.urdf_converter_cfg import UrdfConverterCfg
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets import ArticulationCfg
+
+import AM_RL
 
 ##
 # Configuration
@@ -16,33 +20,46 @@ jointNames = ["flying_arm_3__j_base_link_link_1",
     "flying_arm_3__j_link_2_link_3"]
 eeName = "flying_arm_3__gripper"
 
+rootPath = os.path.dirname(os.path.abspath(AM_RL.__file__))
+
 UAM_CFG = ArticulationCfg(
+    prim_path="/World/uam",
     spawn=sim_utils.UrdfFileCfg(
-        asset_path=f"assets/urdf/{robotName}.urdf",
-        usd_dir=f"assets/usd/",
-        usd_file_name=f"{robotName}.usd"
+        asset_path=rootPath+f"/assets/urdf/{robotName}.urdf",
+        usd_dir=rootPath+f"/assets/usd/",
+        usd_file_name=f"{robotName}.usd",
+        fix_base=True,
+        joint_drive=UrdfConverterCfg.JointDriveCfg(
+            gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=100.0)
+        )
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.1), rot=(0.0, 0.0, 0.0, 1.0),
         joint_pos={
-            jointNames[0]: (0, 0, 0),
-            jointNames[1]: (0.132, 0, 0), 
-            jointNames[2]: (0.207, 0, 0)
+            jointNames[0]: 0.0,
+            jointNames[1]: 0.0,#(0.132, 0, 0), 
+            jointNames[2]: 0.0#(0.207, 0, 0)
         },
     ),
     actuators={
         "propeller_actuator": ImplicitActuatorCfg(
             joint_names_expr=rotorNames,
+            stiffness=0.1,
+            damping=0.1 #
         ),
         "joint_actuator": ImplicitActuatorCfg(
             joint_names_expr=jointNames[:2],
-            effort_limit=1, 
+            effort_limit=1.0, 
             velocity_limit=10000.0, 
+            stiffness=0.1,
+            damping=0.1
         ),
         "last_joint_actuator": ImplicitActuatorCfg(
             joint_names_expr=jointNames[-1],
             effort_limit=0.3, 
             velocity_limit=10000.0, 
+            stiffness=0.1,
+            damping=0.1
         )
     }
 )
