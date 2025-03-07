@@ -6,7 +6,7 @@ import torch.optim as optim
 import numpy as np
 from torch.utils.data import DataLoader, TensorDataset, random_split
 import AM_RL
-from AM_RL.planner.model.planner import PlannerNetwork
+from AM_RL.Planner.model.planner import PlannerNetwork
 
 def load_data(dataset_path):
     try:

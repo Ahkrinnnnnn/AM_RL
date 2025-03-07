@@ -6,16 +6,16 @@ from isaaclab.envs import ManagerBasedEnv, ManagerBasedRLEnv, mdp
 from isaaclab.managers import ActionTerm, ActionTermCfg, SceneEntityCfg
 
 import AM_RL
-from AM_RL.planner.cfgs.robotCfg import *
-from AM_RL.planner.cfgs.rewardCfg import *
+from AM_RL.Planner.cfgs.robotCfg import *
+from AM_RL.Planner.cfgs.rewardCfg import *
 
-norm_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/planner/model/pnorm_params.npz"
+norm_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/Planner/model/pnorm_params.npz"
 norm_params = np.load(norm_path)
 
-states_mid = norm_params["states_mid"]
-states_range = norm_params["states_range"]
-action_mid = norm_params["action_mid"]
-action_range = norm_params["action_range"]
+states_mid = torch.tensor(norm_params["states_mid"], device="cuda")
+states_range = torch.tensor(norm_params["states_range"], device="cuda")
+action_mid = torch.tensor(norm_params["action_mid"], device="cuda")
+action_range = torch.tensor(norm_params["action_range"], device="cuda")
 
 
 ##
@@ -48,7 +48,10 @@ def inormalize_observation(norm_obs):
     
 def inormalize_action(norm_action):
     return norm_action * action_range + action_mid
-    
+
+def deal_obs(observation, num_envs):
+    return torch.stack([normalize_observation(observation[i]) for i in range(num_envs)])
+
 
 class ActionClass(ActionTerm):
 

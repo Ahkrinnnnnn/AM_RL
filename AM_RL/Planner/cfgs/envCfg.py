@@ -16,9 +16,9 @@ from isaaclab.managers import (
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
 
-from AM_RL.planner.cfgs import CustomFunctions
-from AM_RL.planner.cfgs.robotCfg import *
-import AM_RL.planner.cfgs.rewardCfg as RewardFunctions
+from AM_RL.Planner.cfgs.robotCfg import *
+import AM_RL.Planner.cfgs.CustomFunctions as CustomFunctions
+import AM_RL.Planner.cfgs.rewardCfg as RewardFunctions
 
 ##
 # Scene definition
@@ -44,10 +44,14 @@ class UamSceneCfg(InteractiveSceneCfg):
     objective = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/objective",
         spawn=sim_utils.UsdFileCfg(
-            usd_path=rootPath+"/assets/usd/Basketball.usdz",
-            scale=1,
+            usd_path=rootPath+"/assets/usd/ball/scene.usdc",
+            scale=(1.0, 1.0, 1.0),
             copy_from_source=True,
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.1)
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.1),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                rigid_body_enabled=True,
+                disable_gravity=False
+            )
         ),
         init_state=RigidObjectCfg.InitialStateCfg(
             pos=((random.random()-0.5)*20, (random.random()-0.5)*20, 0.1)
@@ -121,7 +125,7 @@ class RewardsCfg:
         weight=1,
         params={"asset_name": "uam", "ee_name": eeName}
     )
-    collision = RewTerm(func=RewardFunctions.collision_reward, weight=1)
+    collision = RewTerm(func=RewardFunctions.collision_reward, weight=1, params={"asset_name": "uam"})
     smooth = RewTerm(func=RewardFunctions.smoothness_reward, weight=1)
     task_dist = RewTerm(func=RewardFunctions.task_dist_reward, weight=1)
 
@@ -136,7 +140,7 @@ class TerminationsCfg:
     am_out_of_bounds = DoneTerm(
         func=CustomFunctions.robot_out_of_bounds,
         params={
-            "asset_cfg": "uam",
+            "asset_name": "uam",
             "bounds": [[-10, 10], [-10, 10], [0, 10]]
         }
     )
@@ -193,17 +197,20 @@ class CustomEnv(ManagerBasedRLEnv):
         self.current_state = None
         self.is_catch = False
     
-    def reset(self):
-        observation = super().reset()
-        self.current_state = observation
-        return CustomFunctions.normalize_observation(observation)
+    def reset(self, seed, options):
+        observation = super().reset(seed=seed, env_ids=None, options=options)
+        self.current_state = observation[0]['policy']
+        #print(f"-----------------------obs shape: {observation}")
+        observation[0]['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
+        return observation
 
     def step(self, action):
         self.last_state = self.current_state
 
         action = CustomFunctions.inormalize_action(action)
         observation, reward, terminated, truncated, info = super().step(action)
-        self.current_state = observation
+        self.current_state = observation[0]['policy']
         self.is_catch = self.is_catch or torch.linalg.norm(observation[:3]-observation[19:], ord=2) < 0.2
 
-        return CustomFunctions.normalize_observation(observation), reward, terminated, truncated, info
+        observation[0]['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
+        return observation, reward, terminated, truncated, info

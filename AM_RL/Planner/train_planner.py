@@ -40,7 +40,6 @@ from isaaclab_rl.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
 from stable_baselines3 import TD3
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.logger import configure
-from stable_baselines3.common.vec_env import VecNormalize
 
 from isaaclab.envs import (
     DirectMARLEnv,
@@ -54,7 +53,8 @@ from isaaclab.utils.io import dump_pickle, dump_yaml
 from isaaclab_tasks.utils.hydra import hydra_task_config
 
 import AM_RL
-import AM_RL.planner.cfgs
+import AM_RL.Planner.cfgs
+from AM_RL.Planner.model.planner import CustomPlannerTD3Policy
 
 
 @hydra_task_config(args_cli.task, "sb3_cfg_entry_point")
@@ -78,7 +78,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     # directory for logging into
     run_info = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    log_root_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/planner/logs/"
+    log_root_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/Planner/logs/"
     print(f"[INFO] Logging experiment in directory: {log_root_path}")
     print(f"Exact experiment name requested from command line: {run_info}")
     log_dir = os.path.join(log_root_path, run_info)
@@ -91,7 +91,6 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # post-process agent configuration
     agent_cfg = process_sb3_cfg(agent_cfg)
     # read configurations about the agent-training
-    policy_arch = agent_cfg.pop("policy")
     n_timesteps = agent_cfg.pop("n_timesteps")
 
     # create isaac environment
@@ -117,7 +116,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     env = Sb3VecEnvWrapper(env)
 
     # create agent from stable baselines
-    agent = TD3(policy_arch, env, verbose=1, **agent_cfg)
+    agent = TD3(CustomPlannerTD3Policy, env, verbose=1, **agent_cfg)
     # configure the logger
     new_logger = configure(log_dir, ["stdout", "tensorboard"])
     agent.set_logger(new_logger)
