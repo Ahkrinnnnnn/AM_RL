@@ -19,6 +19,7 @@ jointNames = ["flying_arm_3__j_base_link_link_1",
     "flying_arm_3__j_link_1_link_2",
     "flying_arm_3__j_link_2_link_3"]
 eeName = "flying_arm_3__gripper"
+baseLinkName = "hexacopter370__base_link"
 
 rootPath = os.path.dirname(os.path.abspath(AM_RL.__file__))
 
@@ -28,7 +29,9 @@ UAM_CFG = ArticulationCfg(
         asset_path=rootPath+f"/assets/urdf/{robotName}.urdf",
         usd_dir=rootPath+f"/assets/usd/",
         usd_file_name=f"{robotName}.usd",
+        force_usd_conversion=True,
         fix_base=True,
+        root_link_name=baseLinkName,
         joint_drive=UrdfConverterCfg.JointDriveCfg(
             gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=100.0)
         )
@@ -37,8 +40,8 @@ UAM_CFG = ArticulationCfg(
         pos=(0.0, 0.0, 0.1), rot=(0.0, 0.0, 0.0, 1.0),
         joint_pos={
             jointNames[0]: 0.0,
-            jointNames[1]: 0.0,#(0.132, 0, 0), 
-            jointNames[2]: 0.0#(0.207, 0, 0)
+            jointNames[1]: 0.0,
+            jointNames[2]: 0.0
         },
     ),
     actuators={
