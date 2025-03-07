@@ -2,7 +2,7 @@ import random
 
 import torch
 import isaaclab.sim as sim_utils
-from isaaclab.assets import ArticulationCfg, AssetBaseCfg
+from isaaclab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
 from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedRLEnvCfg, mdp
 from isaaclab.managers import (
     ActionTermCfg,
@@ -41,10 +41,15 @@ class UamSceneCfg(InteractiveSceneCfg):
         spawn=sim_utils.DomeLightCfg(color=(0.9, 0.9, 0.9), intensity=500.0)
     )
 
-    objective = AssetBaseCfg(
-        prim_path="/World/Sphere",
-        spawn=sim_utils.SphereCfg(radius=0.2),
-        init_state=AssetBaseCfg.InitialStateCfg(
+    objective = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/objective",
+        spawn=sim_utils.UsdFileCfg(
+            usd_path=rootPath+"/assets/usd/Basketball.usdz",
+            scale=1,
+            copy_from_source=True,
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.1)
+        ),
+        init_state=RigidObjectCfg.InitialStateCfg(
             pos=((random.random()-0.5)*20, (random.random()-0.5)*20, 0.1)
         )
     )

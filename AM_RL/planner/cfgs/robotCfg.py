@@ -24,13 +24,14 @@ baseLinkName = "hexacopter370__base_link"
 rootPath = os.path.dirname(os.path.abspath(AM_RL.__file__))
 
 UAM_CFG = ArticulationCfg(
-    prim_path="/World/uam",
+    prim_path="{ENV_REGEX_NS}/uam",
     spawn=sim_utils.UrdfFileCfg(
         asset_path=rootPath+f"/assets/urdf/{robotName}.urdf",
         usd_dir=rootPath+f"/assets/usd/",
         usd_file_name=f"{robotName}.usd",
         force_usd_conversion=True,
         fix_base=True,
+        copy_from_source=True,
         root_link_name=baseLinkName,
         joint_drive=UrdfConverterCfg.JointDriveCfg(
             gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=100.0)
