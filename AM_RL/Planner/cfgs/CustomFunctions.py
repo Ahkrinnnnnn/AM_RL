@@ -57,26 +57,35 @@ class ActionClass(ActionTerm):
 
     def __init__(self, cfg: ActionTermCfg, env: ManagerBasedEnv):
         super().__init__(cfg, env)
+        self._raw_actions = torch.zeros(self.num_envs, self.action_dim, device=self.device)
+        self._processed_actions = torch.zeros_like(self.raw_actions)
+
+    def apply_actions(self) -> None:
+        actions = self._processed_actions
+        robot = self._asset
+        obj = self._env.scene["objective"]
+        ee_index = robot.joint_names.index(eeName)
+        ee_pos = robot.data.joint_pos[:, ee_index]
+
+        robot.write_root_link_state_to_sim(actions[:, :13])
+        robot.write_joint_state_to_sim(actions[:, 13:16], actions[:, 16:19], jointNames)
+        if self.env.is_catch:
+            follow = [torch.stack([(ee_pos[i] + torch.tensor([0.05, 0, -0.01])), torch.tensor([0, 0, 0, 0])]) for i in range(self.num_envs)]
+            obj.write_root_link_state_to_sim(follow)
+
+    def process_actions(self, actions: torch.Tensor) -> torch.Tensor:
+        self._raw_actions = actions
+        # print(f"------------{actions}")
+        self._processed_actions = torch.stack([inormalize_action(actions[i]) for i in range(self.num_envs)]).double()
 
     @property
     def action_dim(self) -> int:
         return 19
 
-    def apply_actions(self, actions: torch.Tensor) -> None:
-        robot = self.env.scene[self.asset_name]
-        robot.write_root_link_state_to_sim(actions[:13])
-        robot.write_joint_state_to_sim(actions[13:16], actions[16:19], jointNames)
-        obj = self.env.scene["objective"]
-        ee_index = robot.joint_names.index(eeName)
-        ee_pos = robot.data.joint_pos[ee_index]
-        if self.env.is_catch:
-            obj.write_root_link_state_to_sim(ee_pos + torch.tensor([0, 0, 0, 0]))
-
-    def process_actions(self, actions: torch.Tensor) -> torch.Tensor:
-        return actions
-
+    @property
     def processed_actions(self) -> torch.Tensor:
-        return self.process_actions(self.raw_actions())
+        return self._processed_actions
 
+    @property
     def raw_actions(self) -> torch.Tensor:
-        return self.env.get_actions()
+        return self._raw_actions

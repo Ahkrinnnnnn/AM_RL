@@ -18,7 +18,8 @@ rotorNames = ["hexacopter370__rotor_" + str(i) + "_joint" for i in range(6)]
 jointNames = ["flying_arm_3__j_base_link_link_1",
     "flying_arm_3__j_link_1_link_2",
     "flying_arm_3__j_link_2_link_3"]
-eeName = "flying_arm_3__gripper"
+# eeName = "flying_arm_3__gripper"
+eeName = "flying_arm_3__j_link_2_link_3"
 baseLinkName = "hexacopter370__base_link"
 
 rootPath = os.path.dirname(os.path.abspath(AM_RL.__file__))
