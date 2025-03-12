@@ -12,7 +12,8 @@ class PlannerNetwork(nn.Module):
             nn.Tanh(),
             nn.Linear(256, 256),
             nn.Tanh(),
-            nn.Linear(256, action_dim)
+            nn.Linear(256, action_dim),
+            nn.Tanh()
         )
 
     def forward(self, x):

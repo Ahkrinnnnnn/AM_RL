@@ -197,16 +197,14 @@ class CustomEnv(ManagerBasedRLEnv):
     def reset(self, seed, options):
         observation = super().reset(seed=seed, env_ids=None, options=options)
         self.current_state = observation[0]['policy']
-        #print(f"-----------------------obs shape: {observation}")
         observation[0]['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
         return observation
 
     def step(self, action):
         self.last_state = self.current_state
-
+        print(f"-------{action}")
         action = CustomFunctions.inormalize_action(action)
         observation, reward, terminated, truncated, info = super().step(action)
-        print(f"-----------------{action}")
         self.current_state = observation['policy']
         self.is_catch = torch.linalg.norm(self.current_state[:, :3]-self.current_state[:, 19:], ord=2) < 0.2
 

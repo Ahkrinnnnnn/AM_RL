@@ -84,7 +84,7 @@ def load_data(dataset_path):
 
     return states_tensor, actions_tensor
 
-def train_behavior_cloning(states_tensor, actions_tensor, model, model_save_path, batch_size=64, epochs=100):
+def train_behavior_cloning(states_tensor, actions_tensor, model, model_save_path, batch_size=64, epochs=20):
     dataset = TensorDataset(states_tensor, actions_tensor)
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
@@ -130,8 +130,8 @@ def val_step(model, dataloader, criterion):
 if __name__ == "__main__":
     package_path = os.path.dirname(os.path.abspath(AM_RL.__file__))
     dataset_path = package_path + "/pretrain/dataset.npy"
-    model_save_path = package_path + "/planner/model/pretraining_planner.pth"
-    norm_params_save_path = package_path + "/planner/model/pnorm_params.npz"
+    model_save_path = package_path + "/Planner/model/pretraining_planner.pth"
+    norm_params_save_path = package_path + "/Planner/model/pnorm_params.npz"
 
     states_tensor, actions_tensor = load_data(dataset_path)
 
