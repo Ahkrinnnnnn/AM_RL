@@ -24,18 +24,17 @@ action_range = torch.tensor(norm_params["action_range"], device="cuda")
 
 
 def robot_out_of_bounds(env: ManagerBasedRLEnv, asset_name: str, bounds: list):
-    x, y, z = env.scene[asset_name].data.root_pos_w
-        
-    if (bounds[0][0] < x < bounds[0][1] and 
-        bounds[1][0] < y < bounds[1][1] and
-        bounds[2][0] < z < bounds[2][1]):
-        return False
-    else:
-        return True
+    root_pos_w = env.scene[asset_name].data.root_pos_w
+    condition = (
+        (bounds[0][0] < root_pos_w[:, 0]) & (root_pos_w[:, 0] < bounds[0][1]) &
+        (bounds[1][0] < root_pos_w[:, 1]) & (root_pos_w[:, 1] < bounds[1][1]) &
+        (bounds[2][0] < root_pos_w[:, 2]) & (root_pos_w[:, 2] < bounds[2][1])
+    )
+    return torch.all(condition)
 
-def finish_task(asset_cfg: SceneEntityCfg):
+def finish_task(env: ManagerBasedRLEnv):
     final_dist = torch.linalg.vector_norm(
-        mdp.observations.root_pos_w(asset_cfg)-task_point,
+        env.current_state[:, 19:]-task_point,
         ord=2
     )
     return final_dist < thresholdCfg["task_finished"]
@@ -63,15 +62,16 @@ class ActionClass(ActionTerm):
     def apply_actions(self) -> None:
         actions = self._processed_actions
         robot = self._asset
+        joint_index = [robot.joint_names.index(j) for j in jointNames]
         obj = self._env.scene["objective"]
-        ee_index = robot.joint_names.index(eeName)
-        ee_pos = robot.data.joint_pos[:, ee_index]
+        ee_index = robot.body_names.index(eeName)
+        ee_pos = robot.data.body_pos_w[:, ee_index]
 
-        robot.write_root_link_state_to_sim(actions[:, :13])
-        robot.write_joint_state_to_sim(actions[:, 13:16], actions[:, 16:19], jointNames)
-        if self.env.is_catch:
+        robot.write_root_state_to_sim(actions[:, :13])
+        robot.write_joint_state_to_sim(actions[:, 13:16].float(), actions[:, 16:19].float(), joint_index)
+        if self._env.is_catch:
             follow = [torch.stack([(ee_pos[i] + torch.tensor([0.05, 0, -0.01])), torch.tensor([0, 0, 0, 0])]) for i in range(self.num_envs)]
-            obj.write_root_link_state_to_sim(follow)
+            obj.write_root_pose_to_sim(follow)
 
     def process_actions(self, actions: torch.Tensor) -> torch.Tensor:
         self._raw_actions = actions

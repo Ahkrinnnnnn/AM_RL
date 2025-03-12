@@ -125,7 +125,7 @@ class RewardsCfg:
         weight=1,
         params={"asset_name": "uam", "ee_name": eeName}
     )
-    collision = RewTerm(func=RewardFunctions.collision_reward, weight=1, params={"asset_name": "uam"})
+    # collision = RewTerm(func=RewardFunctions.collision_reward, weight=1, params={"asset_name": "uam"})
     smooth = RewTerm(func=RewardFunctions.smoothness_reward, weight=1)
     task_dist = RewTerm(func=RewardFunctions.task_dist_reward, weight=1)
 
@@ -145,10 +145,7 @@ class TerminationsCfg:
         }
     )
     # (3) Task finished
-    task_finished = DoneTerm(
-        func=CustomFunctions.finish_task,
-        params={"asset_cfg": SceneEntityCfg("objective")}
-    )
+    task_finished = DoneTerm(func=CustomFunctions.finish_task)
 
 
 ##
@@ -209,8 +206,9 @@ class CustomEnv(ManagerBasedRLEnv):
 
         action = CustomFunctions.inormalize_action(action)
         observation, reward, terminated, truncated, info = super().step(action)
-        self.current_state = observation[0]['policy']
-        self.is_catch = self.is_catch or torch.linalg.norm(observation[:3]-observation[19:], ord=2) < 0.2
+        print(f"-----------------{action}")
+        self.current_state = observation['policy']
+        self.is_catch = torch.linalg.norm(self.current_state[:, :3]-self.current_state[:, 19:], ord=2) < 0.2
 
-        observation[0]['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
+        observation['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
         return observation, reward, terminated, truncated, info

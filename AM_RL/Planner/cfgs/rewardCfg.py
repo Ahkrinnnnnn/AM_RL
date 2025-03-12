@@ -15,7 +15,7 @@ thresholdCfg = {
     "angle_thresh": 0.1,
     "task_finished": 0.1
 }
-task_point = torch.tensor([0, 0, 0.5])
+task_point = torch.tensor([0, 0, 0.5], device="cuda")
 
 
 ##
@@ -23,34 +23,34 @@ task_point = torch.tensor([0, 0, 0.5])
 ##
 
 
+def get_ee_pos(env: ManagerBasedRLEnv, asset_name: str, ee_name: str):
+    ee_index = env.scene[asset_name].body_names.index(ee_name)
+    return env.scene[asset_name].data.body_pos_w[:, ee_index]
+
 def ee_dist_reward(env: ManagerBasedRLEnv, asset_name: str, ee_name: str):
-    ee_index = env.scene[asset_name].joint_names.index(ee_name)
-    ee_pos = env.scene[asset_name].data.joint_pos[ee_index]
-    last_distance = torch.linalg.norm(ee_pos - env.last_state[19:], ord=2)
-    current_distance = torch.linalg.norm(ee_pos - env.current_state[19:], ord=2)
+    ee_pos = get_ee_pos(env, asset_name, ee_name)
+    last_distance = torch.linalg.norm(ee_pos - env.last_state[:, 19:], ord=2)
+    current_distance = torch.linalg.norm(ee_pos - env.current_state[:, 19:], ord=2)
     return (current_distance - last_distance) * rewardsWeightCfg["ee_dist"]
 
 def time_reward(env: ManagerBasedRLEnv):
     return rewardsWeightCfg["time"]
  
 def is_captured_reward(env: ManagerBasedRLEnv, asset_name: str, ee_name: str, threshold: float = 0.1):
-    ee_index = env.scene[asset_name].joint_names.index(ee_name)
-    ee_pos = env.scene[asset_name].data.joint_pos[ee_index]
-    current_distance = torch.linalg.norm(ee_pos - env.current_state[19:], ord=2)
+    ee_pos = get_ee_pos(env, asset_name, ee_name)
+    current_distance = torch.linalg.norm(ee_pos - env.current_state[:, 19:], ord=2)
     if current_distance < threshold:
         return rewardsWeightCfg["is_captured"]
     else:
         return 0.0
 
-def collision_reward(env: ManagerBasedRLEnv, asset_name: str):
-    if env.scene[asset_name].is_in_collision():
-        return rewardsWeightCfg["collision"]
-    return 0.0
+#def collision_reward(env: ManagerBasedRLEnv, asset_name: str):
+#    return env.scene[asset_name].is_in_collision() * rewardsWeightCfg["collision"]
 
 def smoothness_reward(env: ManagerBasedRLEnv):
-    dx = env.current_state[:3] - env.last_state[:3]
-    vt = env.current_state[7:10] * env.sim.dt
-    dang = env.current_state[3:7] - env.last_state[3:7]
+    dx = env.current_state[:, :3] - env.last_state[:, :3]
+    vt = env.current_state[:, 7:10] * env.step_dt
+    dang = env.current_state[:, 3:7] - env.last_state[:, 3:7]
     heading_reward = -1 * rewardsWeightCfg["heading"]
     if torch.all(torch.linalg.norm(dx - vt, ord=1) < thresholdCfg["heading_thresh"]):
         heading_reward = rewardsWeightCfg["heading"]
@@ -60,5 +60,5 @@ def smoothness_reward(env: ManagerBasedRLEnv):
     return heading_reward + ang_reward
 
 def task_dist_reward(env: ManagerBasedRLEnv):
-    task_dist = torch.linalg.norm(env.current_state[19:]-task_point, ord=2) - torch.linalg.norm(env.last_state[19:]-task_point, ord=2)
+    task_dist = torch.linalg.norm(env.current_state[:, 19:]-task_point, ord=2) - torch.linalg.norm(env.last_state[:, 19:]-task_point, ord=2)
     return task_dist * rewardsWeightCfg["task_dist"]
