@@ -7,10 +7,7 @@ from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedRLEnvCfg, mdp
 from isaaclab.managers import (
     ActionTermCfg,
     EventTermCfg as EventTerm,
-    ObservationGroupCfg as ObsGroup,
-    ObservationTermCfg as ObsTerm,
     RewardTermCfg as RewTerm,
-    SceneEntityCfg,
     TerminationTermCfg as DoneTerm
 )
 from isaaclab.scene import InteractiveSceneCfg
@@ -70,7 +67,8 @@ class ActionsCfg:
 
     planning_state = ActionTermCfg(
         class_type=CustomFunctions.ActionClass,
-        asset_name="uam"
+        asset_name="uam", 
+        clip=(-1.0, 1.0)
     )
 
 
@@ -78,25 +76,8 @@ class ActionsCfg:
 class ObservationsCfg:
     """Observation specifications for the MDP."""
 
-    @configclass
-    class PolicyCfg(ObsGroup):
-        """Observations for policy group."""
-
-        # observation terms (order preserved)
-        base_pos = ObsTerm(func=mdp.observations.root_pos_w, params={"asset_cfg": SceneEntityCfg("uam")})
-        base_quat = ObsTerm(func=mdp.observations.root_quat_w, params={"asset_cfg": SceneEntityCfg("uam")})
-        base_lin_vel = ObsTerm(func=mdp.observations.root_lin_vel_w, params={"asset_cfg": SceneEntityCfg("uam")})
-        base_ang_vel = ObsTerm(func=mdp.observations.root_ang_vel_w, params={"asset_cfg": SceneEntityCfg("uam")})
-        joint_pos = ObsTerm(func=mdp.observations.joint_pos, params={"asset_cfg": SceneEntityCfg("uam", joint_names=jointNames)})
-        joint_vel = ObsTerm(func=mdp.observations.joint_vel, params={"asset_cfg": SceneEntityCfg("uam", joint_names=jointNames)})
-        obj_pos = ObsTerm(func=mdp.observations.root_pos_w, params={"asset_cfg": SceneEntityCfg("objective")})
-
-        def __post_init__(self) -> None:
-            self.enable_corruption = False
-            self.concatenate_terms = True
-
     # observation groups
-    policy: PolicyCfg = PolicyCfg()
+    policy = CustomFunctions.PolicyCfg()
 
 
 @configclass
@@ -196,17 +177,14 @@ class CustomEnv(ManagerBasedRLEnv):
     
     def reset(self, seed, options):
         observation = super().reset(seed=seed, env_ids=None, options=options)
-        self.current_state = observation[0]['policy']
-        observation[0]['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
+        self.current_state = CustomFunctions.deal_obs(self.current_state, self.num_envs)
         return observation
 
     def step(self, action):
         self.last_state = self.current_state
         print(f"-------{action}")
-        action = CustomFunctions.inormalize_action(action)
         observation, reward, terminated, truncated, info = super().step(action)
-        self.current_state = observation['policy']
+        self.current_state = CustomFunctions.deal_obs(self.current_state, self.num_envs)
         self.is_catch = torch.linalg.norm(self.current_state[:, :3]-self.current_state[:, 19:], ord=2) < 0.2
 
-        observation['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
         return observation, reward, terminated, truncated, info

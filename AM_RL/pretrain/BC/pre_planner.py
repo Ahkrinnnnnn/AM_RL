@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 from torch.utils.data import DataLoader, TensorDataset, random_split
+from gymnasium import spaces
 import AM_RL
 from AM_RL.Planner.model.planner import PlannerNetwork
 
@@ -135,9 +136,9 @@ if __name__ == "__main__":
 
     states_tensor, actions_tensor = load_data(dataset_path)
 
-    state_dim = states_tensor.shape[1]
-    action_dim = actions_tensor.shape[1]
+    state_dim = spaces.Box(low=-1, high=1, shape=(states_tensor.shape[1],), dtype=np.float32)
+    action_dim = spaces.Box(low=-1, high=1, shape=(actions_tensor.shape[1],), dtype=np.float32)
 
-    dqn_model = PlannerNetwork(state_dim, action_dim)
+    td3_model = PlannerNetwork(state_dim, action_dim)
 
-    train_behavior_cloning(states_tensor, actions_tensor, dqn_model, model_save_path)
+    train_behavior_cloning(states_tensor, actions_tensor, td3_model, model_save_path)
