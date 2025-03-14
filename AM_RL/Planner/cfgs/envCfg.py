@@ -1,13 +1,18 @@
 import random
 
 import torch
+import numpy as np
+from gymnasium import spaces
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
 from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedRLEnvCfg, mdp
 from isaaclab.managers import (
     ActionTermCfg,
     EventTermCfg as EventTerm,
+    ObservationGroupCfg as ObsGroup,
+    ObservationTermCfg as ObsTerm,
     RewardTermCfg as RewTerm,
+    SceneEntityCfg,
     TerminationTermCfg as DoneTerm
 )
 from isaaclab.scene import InteractiveSceneCfg
@@ -44,7 +49,7 @@ class UamSceneCfg(InteractiveSceneCfg):
             usd_path=rootPath+"/assets/usd/ball/scene.usdc",
             scale=(1.0, 1.0, 1.0),
             copy_from_source=True,
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.1),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 rigid_body_enabled=True,
                 disable_gravity=False
@@ -67,8 +72,7 @@ class ActionsCfg:
 
     planning_state = ActionTermCfg(
         class_type=CustomFunctions.ActionClass,
-        asset_name="uam", 
-        clip=(-1.0, 1.0)
+        asset_name="uam"
     )
 
 
@@ -76,8 +80,25 @@ class ActionsCfg:
 class ObservationsCfg:
     """Observation specifications for the MDP."""
 
+    @configclass
+    class PolicyCfg(ObsGroup):
+        """Observations for policy group."""
+
+        # observation terms (order preserved)
+        base_pos = ObsTerm(func=mdp.observations.root_pos_w, params={"asset_cfg": SceneEntityCfg("uam")})
+        base_quat = ObsTerm(func=mdp.observations.root_quat_w, params={"asset_cfg": SceneEntityCfg("uam")})
+        base_lin_vel = ObsTerm(func=mdp.observations.root_lin_vel_w, params={"asset_cfg": SceneEntityCfg("uam")})
+        base_ang_vel = ObsTerm(func=mdp.observations.root_ang_vel_w, params={"asset_cfg": SceneEntityCfg("uam")})
+        joint_pos = ObsTerm(func=mdp.observations.joint_pos, params={"asset_cfg": SceneEntityCfg("uam", joint_names=jointNames)})
+        joint_vel = ObsTerm(func=mdp.observations.joint_vel, params={"asset_cfg": SceneEntityCfg("uam", joint_names=jointNames)})
+        obj_pos = ObsTerm(func=mdp.observations.root_pos_w, params={"asset_cfg": SceneEntityCfg("objective")})
+
+        def __post_init__(self) -> None:
+            self.enable_corruption = False
+            self.concatenate_terms = True
+
     # observation groups
-    policy = CustomFunctions.PolicyCfg()
+    policy: PolicyCfg = PolicyCfg()
 
 
 @configclass
@@ -171,20 +192,32 @@ class CustomEnv(ManagerBasedRLEnv):
     def __init__(self, cfg: UamEnvCfg, render_mode: str | None = None, **kwargs):
         super().__init__(cfg, render_mode, **kwargs)
 
+        self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(22,), dtype=np.float32)
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(19,), dtype=np.float32)
+    
         self.last_state = None
         self.current_state = None
         self.is_catch = False
     
     def reset(self, seed, options):
         observation = super().reset(seed=seed, env_ids=None, options=options)
-        self.current_state = CustomFunctions.deal_obs(self.current_state, self.num_envs)
+        self.current_state = observation[0]['policy']
+        observation[0]['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
+
+        # print(f"-------{observation[0]['policy']}")
+
         return observation
 
     def step(self, action):
         self.last_state = self.current_state
-        print(f"-------{action}")
+
+        # print(f"-------{action}")
+
         observation, reward, terminated, truncated, info = super().step(action)
-        self.current_state = CustomFunctions.deal_obs(self.current_state, self.num_envs)
+        self.current_state = observation['policy']
         self.is_catch = torch.linalg.norm(self.current_state[:, :3]-self.current_state[:, 19:], ord=2) < 0.2
 
+        print(f"-------{[observation['policy'], reward, terminated, truncated]}")
+        
+        observation['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
         return observation, reward, terminated, truncated, info

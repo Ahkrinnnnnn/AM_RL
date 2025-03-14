@@ -16,14 +16,14 @@ def load_data(dataset_path):
         raise FileNotFoundError(f"Dataset file {dataset_path} not found!")
 
     states_mid = np.array([
-        0, 0, 0,
+        0, 0, 10,
         0, 0, 0, 0,
         0, 0, 0,
         0, 0, 0,
         0, 0, 0,
         0, 0, 0,
 
-        0, 0, 0,
+        0, 0, 10,
     ])
     states_range = np.array([
         20, 20, 20,
@@ -37,12 +37,12 @@ def load_data(dataset_path):
     ])
 
     action_mid = np.array([
-        0, 0, 0,
+        0, 0, 10,
         0, 0, 0, 0,
         0, 0, 0,
         0, 0, 0,
         0, 0, 0,
-        0, 0, 0,
+        0, 0, 10,
     ])
     action_range = np.array([
         20, 20, 20,

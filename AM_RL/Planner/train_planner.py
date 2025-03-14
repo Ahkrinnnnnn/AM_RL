@@ -36,7 +36,7 @@ import os
 import random
 from datetime import datetime
 
-from isaaclab_rl.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
+from isaaclab_rl.sb3 import process_sb3_cfg
 from stable_baselines3 import TD3
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.logger import configure
@@ -55,6 +55,7 @@ from isaaclab_tasks.utils.hydra import hydra_task_config
 import AM_RL
 import AM_RL.Planner.cfgs
 from AM_RL.Planner.model.planner import CustomPlannerTD3Policy
+from AM_RL.Planner.cfgs.CustomFunctions import MySb3VecEnvWrapper
 
 
 @hydra_task_config(args_cli.task, "sb3_cfg_entry_point")
@@ -96,7 +97,6 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
 
-    print(env.action_space)
     # convert to single-agent instance if required by the RL algorithm
     if isinstance(env.unwrapped, DirectMARLEnv):
         env = multi_agent_to_single_agent(env)
@@ -114,7 +114,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         env = gym.wrappers.RecordVideo(env, **video_kwargs)
 
     # wrap around environment for stable baselines
-    env = Sb3VecEnvWrapper(env)
+    env = MySb3VecEnvWrapper(env)
 
     # create agent from stable baselines
     agent = TD3(CustomPlannerTD3Policy, env, verbose=1, **agent_cfg)
