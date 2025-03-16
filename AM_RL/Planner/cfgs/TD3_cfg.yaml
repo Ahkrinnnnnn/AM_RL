@@ -1,5 +1,5 @@
 seed: 42
-n_timesteps: 10
+n_timesteps: 100
 learning_rate: 0.001
 batch_size: 100
 gamma: 0.99
@@ -9,3 +9,6 @@ gradient_steps: 1
 optimize_memory_usage: False 
 device: "cuda"
 tensorboard_log: "logs/tensorboard"
+
+policy_kwargs:
+  normalize_images: False

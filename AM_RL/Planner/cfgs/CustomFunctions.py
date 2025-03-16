@@ -51,7 +51,7 @@ def inormalize_action(norm_action):
     return norm_action * action_range + action_mid
 
 def deal_obs(observation, num_envs):
-    return torch.stack([normalize_observation(observation[i]) for i in range(num_envs)])
+    return torch.stack([normalize_observation(observation[i]) for i in range(num_envs)]).float()
 
 
 class ActionClass(ActionTerm):
@@ -63,25 +63,24 @@ class ActionClass(ActionTerm):
 
     def apply_actions(self) -> None:
         actions = self._processed_actions
+
+        print(f"-------a:{actions}")
+
         robot = self._asset
         joint_index = [robot.joint_names.index(j) for j in jointNames]
         obj = self._env.scene["objective"]
         ee_index = robot.body_names.index(eeName)
         ee_pos = robot.data.body_pos_w[:, ee_index]
 
-        robot.write_root_link_pose_to_sim(actions[:, :7])
-
-        """
         robot.write_root_state_to_sim(actions[:, :13])
         robot.write_joint_state_to_sim(actions[:, 13:16].float(), actions[:, 16:19].float(), joint_index)
         if self._env.is_catch:
             follow = [torch.stack([(ee_pos[i] + torch.tensor([0.05, 0, -0.01])), torch.tensor([0, 0, 0, 0])]) for i in range(self.num_envs)]
             obj.write_root_pose_to_sim(follow)
-        """
+        
 
     def process_actions(self, actions: torch.Tensor) -> torch.Tensor:
         self._raw_actions = actions
-        # print(f"------------{actions}")
         self._processed_actions = torch.stack([inormalize_action(actions[i]) for i in range(self.num_envs)]).double()
 
     @property

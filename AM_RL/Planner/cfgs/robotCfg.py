@@ -1,11 +1,12 @@
-"""Configuration for a UAM robot."""
+"""Configuration for robots."""
 
+import random
 import os
 
 import isaaclab.sim as sim_utils
 from isaaclab.sim.converters.urdf_converter_cfg import UrdfConverterCfg
 from isaaclab.actuators import ImplicitActuatorCfg
-from isaaclab.assets import ArticulationCfg
+from isaaclab.assets import ArticulationCfg, RigidObjectCfg
 
 import AM_RL
 
@@ -21,6 +22,7 @@ jointNames = ["flying_arm_3__j_base_link_link_1",
 # eeName = "flying_arm_3__gripper"
 eeName = "flying_arm_3__link_3"
 baseLinkName = "hexacopter370__base_link"
+objName = "ball"
 
 rootPath = os.path.dirname(os.path.abspath(AM_RL.__file__))
 
@@ -31,7 +33,7 @@ UAM_CFG = ArticulationCfg(
         usd_dir=rootPath+f"/assets/usd/uam/",
         usd_file_name=f"{robotName}.usd",
         force_usd_conversion=True,
-        fix_base=True,
+        fix_base=False,
         copy_from_source=True,
         root_link_name=baseLinkName,
         joint_drive=UrdfConverterCfg.JointDriveCfg(
@@ -69,4 +71,23 @@ UAM_CFG = ArticulationCfg(
     }
 )
 
-"""Configuration for a simple UAM robot."""
+obj_CFG = RigidObjectCfg(
+    prim_path="{ENV_REGEX_NS}/objective",
+    spawn=sim_utils.UrdfFileCfg(
+        asset_path=rootPath+f"/assets/urdf/{objName}.urdf",
+        usd_dir=rootPath+f"/assets/usd/ball/",
+        usd_file_name=f"{objName}.usd",
+        force_usd_conversion=True,
+        fix_base=False,
+        copy_from_source=True,
+        root_link_name="base_link",
+        joint_drive=UrdfConverterCfg.JointDriveCfg(
+            gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=100.0)
+        )
+    ),
+    init_state=RigidObjectCfg.InitialStateCfg(
+        pos=((random.random()-0.5)*20, (random.random()-0.5)*20, 0.1)
+    )
+)
+
+"""Configuration for robots."""

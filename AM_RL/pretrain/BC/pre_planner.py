@@ -16,48 +16,48 @@ def load_data(dataset_path):
         raise FileNotFoundError(f"Dataset file {dataset_path} not found!")
 
     states_mid = np.array([
-        0, 0, 10,
+        0, 0, 5,
         0, 0, 0, 0,
         0, 0, 0,
         0, 0, 0,
         0, 0, 0,
         0, 0, 0,
 
-        0, 0, 10,
+        0, 0, 5,
     ])
-    states_range = np.array([
-        20, 20, 20,
+    states_half_range = np.array([
+        20, 20, 10,
         2, 2, 2, 2,
         20, 20, 20,
         20, 20, 20, 
         3.3415926535897932, 3.3415926535897932, 3.3415926535897932,
         20, 20, 20, 
         
-        20, 20, 20
-    ])
+        20, 20, 10
+    ]) / 2
 
     action_mid = np.array([
-        0, 0, 10,
+        0, 0, 5,
         0, 0, 0, 0,
         0, 0, 0,
         0, 0, 0,
         0, 0, 0,
-        0, 0, 10,
+        0, 0, 5,
     ])
-    action_range = np.array([
-        20, 20, 20,
+    action_half_range = np.array([
+        20, 20, 10,
         2, 2, 2, 2,
         20, 20, 20,
         20, 20, 20, 
         3.3415926535897932, 3.3415926535897932, 3.3415926535897932,
-        20, 20, 20, 
-    ])
+        20, 20, 10, 
+    ]) / 2
 
-    # np.savez(
-    #     norm_params_save_path, 
-    #     states_mid=states_mid, states_range=states_range,
-    #     action_mid=action_mid, action_range=action_range
-    # )
+    np.savez(
+        norm_params_save_path, 
+        states_mid=states_mid, states_range=states_half_range,
+        action_mid=action_mid, action_range=action_half_range
+    )   # ensure they are in [-1, 1]
 
     states, actions = [], []
     for trajectory in dataset:
@@ -67,14 +67,14 @@ def load_data(dataset_path):
                     trajectory["target_pos"]), axis=0
                 )
             a = trajectory["planned_path"][i+1]
-            if all(-1 <= x <= 1 for x in (s-states_mid)/states_range):
+            if all(-1 <= x <= 1 for x in (s-states_mid)/states_half_range):
                 states.append(s)
                 actions.append(a)
 
     states = np.array(states)
     actions = np.array(actions)
-    states_tensor = torch.tensor((states-states_mid)/states_range, dtype=torch.float32)
-    actions_tensor = torch.tensor((actions-action_mid)/action_range, dtype=torch.float32)
+    states_tensor = torch.tensor((states-states_mid)/states_half_range, dtype=torch.float32)
+    actions_tensor = torch.tensor((actions-action_mid)/action_half_range, dtype=torch.float32)
 
     # np.set_printoptions(threshold=np.inf)
     # print(np.sum((states-states_mid)/states_range > 1))
@@ -82,7 +82,8 @@ def load_data(dataset_path):
     # print(np.min(states, axis=0))
     # print(np.max(states, axis=0))
     # print(np.min(states, axis=0))
-
+    print(f"states length: {states_tensor.shape}; action length: {actions_tensor.shape}")
+    
     return states_tensor, actions_tensor
 
 def train_behavior_cloning(states_tensor, actions_tensor, model, model_save_path, batch_size=64, epochs=20):

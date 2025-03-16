@@ -1,10 +1,8 @@
-import random
-
 import torch
 import numpy as np
 from gymnasium import spaces
 import isaaclab.sim as sim_utils
-from isaaclab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
+from isaaclab.assets import ArticulationCfg, AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedRLEnvCfg, mdp
 from isaaclab.managers import (
     ActionTermCfg,
@@ -33,32 +31,23 @@ class UamSceneCfg(InteractiveSceneCfg):
 
     ground = AssetBaseCfg(
         prim_path="/World/defaultGroundPlane",
-        spawn=sim_utils.GroundPlaneCfg(size=(20.0, 20.0))
+        spawn=sim_utils.GroundPlaneCfg(
+            size=(20.0, 20.0),
+            color=(1.0, 1.0, 1.0)
+        )
+    )
+
+    dome_light = AssetBaseCfg(
+        prim_path="/World/DomeLight",
+        spawn=sim_utils.DomeLightCfg(
+            color=(0.9, 0.9, 0.9), 
+            intensity=500.0
+        )
     )
 
     uam: ArticulationCfg = UAM_CFG
 
-    dome_light = AssetBaseCfg(
-        prim_path="/World/DomeLight",
-        spawn=sim_utils.DomeLightCfg(color=(0.9, 0.9, 0.9), intensity=500.0)
-    )
-
-    objective = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/objective",
-        spawn=sim_utils.UsdFileCfg(
-            usd_path=rootPath+"/assets/usd/ball/scene.usdc",
-            scale=(1.0, 1.0, 1.0),
-            copy_from_source=True,
-            mass_props=sim_utils.MassPropertiesCfg(mass=0),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                rigid_body_enabled=True,
-                disable_gravity=False
-            )
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(
-            pos=((random.random()-0.5)*20, (random.random()-0.5)*20, 0.1)
-        )
-    )
+    objective = obj_CFG
 
 
 ##
@@ -139,6 +128,7 @@ class TerminationsCfg:
     # (1) Time out
     time_out = DoneTerm(func=mdp.terminations.time_out, time_out=True)
     # (2) AM out of bounds
+    """
     am_out_of_bounds = DoneTerm(
         func=CustomFunctions.robot_out_of_bounds,
         params={
@@ -146,6 +136,7 @@ class TerminationsCfg:
             "bounds": [[-10, 10], [-10, 10], [0, 10]]
         }
     )
+    """
     # (3) Task finished
     task_finished = DoneTerm(func=CustomFunctions.finish_task)
 
@@ -204,20 +195,20 @@ class CustomEnv(ManagerBasedRLEnv):
         self.current_state = observation[0]['policy']
         observation[0]['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
 
-        # print(f"-------{observation[0]['policy']}")
+        print(f"-------init o:{observation[0]['policy']}")
 
         return observation
 
     def step(self, action):
         self.last_state = self.current_state
 
-        # print(f"-------{action}")
-
+        # print(f"-------a:{action}")
+        
         observation, reward, terminated, truncated, info = super().step(action)
         self.current_state = observation['policy']
         self.is_catch = torch.linalg.norm(self.current_state[:, :3]-self.current_state[:, 19:], ord=2) < 0.2
 
-        print(f"-------{[observation['policy'], reward, terminated, truncated]}")
+        print(f"-------o:{[observation['policy'], reward, terminated, truncated]}")
         
         observation['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
         return observation, reward, terminated, truncated, info
