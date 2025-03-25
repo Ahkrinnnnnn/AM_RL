@@ -128,7 +128,6 @@ class TerminationsCfg:
     # (1) Time out
     time_out = DoneTerm(func=mdp.terminations.time_out, time_out=True)
     # (2) AM out of bounds
-    """
     am_out_of_bounds = DoneTerm(
         func=CustomFunctions.robot_out_of_bounds,
         params={
@@ -136,7 +135,6 @@ class TerminationsCfg:
             "bounds": [[-10, 10], [-10, 10], [0, 10]]
         }
     )
-    """
     # (3) Task finished
     task_finished = DoneTerm(func=CustomFunctions.finish_task)
 

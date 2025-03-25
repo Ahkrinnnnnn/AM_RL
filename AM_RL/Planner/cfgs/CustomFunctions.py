@@ -32,7 +32,7 @@ def robot_out_of_bounds(env: ManagerBasedRLEnv, asset_name: str, bounds: list):
         (bounds[1][0] < root_pos_w[:, 1]) & (root_pos_w[:, 1] < bounds[1][1]) &
         (bounds[2][0] < root_pos_w[:, 2]) & (root_pos_w[:, 2] < bounds[2][1])
     )
-    return torch.all(condition)
+    return ~torch.all(condition)
 
 def finish_task(env: ManagerBasedRLEnv):
     final_dist = torch.linalg.vector_norm(

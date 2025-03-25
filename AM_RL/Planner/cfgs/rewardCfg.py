@@ -2,19 +2,19 @@ import torch
 from isaaclab.envs import ManagerBasedRLEnv
 
 rewardsWeightCfg = {
-    "ee_dist": -10,
+    "ee_dist": -50,
     "time": -0.01,
     "is_captured": 50,
     "collision": -1000,
-    "heading": 2,
-    "angle": 2,
+    "heading": 10,
+    "angle": 10,
     "task_dist": -2,
     "plan_diff_pos": -1,
     "plan_diff_alg": -1
 }
 thresholdCfg = {
-    "heading_thresh": 0.1,
-    "angle_thresh": 0.1,
+    "heading_thresh": 1,
+    "angle_thresh": 1,
     "task_finished": 0.1
 }
 task_point = torch.tensor([0, 0, 0.5], device="cuda")
@@ -38,7 +38,7 @@ def ee_dist_reward(env: ManagerBasedRLEnv, asset_name: str, ee_name: str):
 def time_reward(env: ManagerBasedRLEnv):
     return rewardsWeightCfg["time"]
  
-def is_captured_reward(env: ManagerBasedRLEnv, asset_name: str, ee_name: str, threshold: float = 0.1):
+def is_captured_reward(env: ManagerBasedRLEnv, asset_name: str, ee_name: str, threshold: float = 0.2):
     ee_pos = get_ee_pos(env, asset_name, ee_name)
     current_distance = torch.linalg.norm(ee_pos - env.current_state[:, 19:], ord=2)
     if current_distance < threshold:
@@ -50,16 +50,15 @@ def is_captured_reward(env: ManagerBasedRLEnv, asset_name: str, ee_name: str, th
 #    return env.scene[asset_name].is_in_collision() * rewardsWeightCfg["collision"]
 
 def smoothness_reward(env: ManagerBasedRLEnv):
-    dx = env.current_state[:, :3] - env.last_state[:, :3]
-    vt = env.current_state[:, 7:10] * env.step_dt
-    dang = env.current_state[:, 3:7] - env.last_state[:, 3:7]
-    heading_reward = -1 * rewardsWeightCfg["heading"]
-    if torch.all(torch.linalg.norm(dx - vt, ord=1) < thresholdCfg["heading_thresh"]):
-        heading_reward = rewardsWeightCfg["heading"]
+    dv = (env.current_state[:, 7:10] - env.last_state[:, 7:10]) / env.step_dt
+    dang = (env.current_state[:, 10:13] - env.last_state[:, 7:10]) / env.step_dt
+    lin_reward = -1 * rewardsWeightCfg["heading"]
+    if torch.all(torch.linalg.norm(dv, ord=2) < thresholdCfg["heading_thresh"]):
+        lin_reward = rewardsWeightCfg["heading"]
     ang_reward = -1 * rewardsWeightCfg["angle"]
-    if torch.all(dang < thresholdCfg["angle_thresh"]):
+    if torch.all(torch.linalg.norm(dang, ord=2) < thresholdCfg["angle_thresh"]):
         ang_reward = rewardsWeightCfg["heading"]
-    return heading_reward + ang_reward
+    return lin_reward + ang_reward
 
 def task_dist_reward(env: ManagerBasedRLEnv):
     task_dist = torch.linalg.norm(env.current_state[:, 19:]-task_point, ord=2) - torch.linalg.norm(env.last_state[:, 19:]-task_point, ord=2)
