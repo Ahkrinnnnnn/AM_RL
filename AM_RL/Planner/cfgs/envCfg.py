@@ -119,7 +119,7 @@ class RewardsCfg:
     # collision = RewTerm(func=RewardFunctions.collision_reward, weight=1, params={"asset_name": "uam"})
     smooth = RewTerm(func=RewardFunctions.smoothness_reward, weight=1)
     task_dist = RewTerm(func=RewardFunctions.task_dist_reward, weight=1)
-
+    plan_diff = RewTerm(func=RewardFunctions.plan_diff_reward, weight=1)
 
 @configclass
 class TerminationsCfg:
@@ -188,6 +188,7 @@ class CustomEnv(ManagerBasedRLEnv):
     
         self.last_state = None
         self.current_state = None
+        self.planned = None
         self.is_catch = False
     
     def reset(self, seed, options):
@@ -195,7 +196,7 @@ class CustomEnv(ManagerBasedRLEnv):
         self.current_state = observation[0]['policy']
         observation[0]['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
 
-        print(f"-------init o:{observation[0]['policy']}")
+        # print(f"-------init o:{observation[0]['policy']}")
 
         return observation
 
@@ -207,8 +208,9 @@ class CustomEnv(ManagerBasedRLEnv):
         observation, reward, terminated, truncated, info = super().step(action)
         self.current_state = observation['policy']
         self.is_catch = torch.linalg.norm(self.current_state[:, :3]-self.current_state[:, 19:], ord=2) < 0.2
+        self.planned = action
 
-        print(f"-------o:{[observation['policy'], reward, terminated, truncated]}")
+        # print(f"-------o:{[observation['policy'], reward, terminated, truncated]}")
         
         observation['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
         return observation, reward, terminated, truncated, info

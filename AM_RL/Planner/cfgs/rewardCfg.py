@@ -2,13 +2,15 @@ import torch
 from isaaclab.envs import ManagerBasedRLEnv
 
 rewardsWeightCfg = {
-    "ee_dist": -1,
-    "time": -1,
+    "ee_dist": -10,
+    "time": -0.01,
     "is_captured": 50,
     "collision": -1000,
     "heading": 2,
     "angle": 2,
-    "task_dist": -2
+    "task_dist": -2,
+    "plan_diff_pos": -1,
+    "plan_diff_alg": -1
 }
 thresholdCfg = {
     "heading_thresh": 0.1,
@@ -62,3 +64,10 @@ def smoothness_reward(env: ManagerBasedRLEnv):
 def task_dist_reward(env: ManagerBasedRLEnv):
     task_dist = torch.linalg.norm(env.current_state[:, 19:]-task_point, ord=2) - torch.linalg.norm(env.last_state[:, 19:]-task_point, ord=2)
     return task_dist * rewardsWeightCfg["task_dist"]
+
+def plan_diff_reward(env: ManagerBasedRLEnv):
+    if env.planned == None:
+        return 0
+    plan_diff_pos = torch.linalg.norm(env.planned[:, :3] - env.current_state[:, :3], ord=2)
+    plan_diff_alg = torch.linalg.norm(env.planned[:, 3:7] - env.current_state[:, 3:7], ord=2)
+    return plan_diff_pos * rewardsWeightCfg["plan_diff_pos"] + plan_diff_alg * rewardsWeightCfg["plan_diff_alg"]

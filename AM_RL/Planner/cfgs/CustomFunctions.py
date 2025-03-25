@@ -64,7 +64,7 @@ class ActionClass(ActionTerm):
     def apply_actions(self) -> None:
         actions = self._processed_actions
 
-        print(f"-------a:{actions}")
+        # print(f"-------a:{actions}")
 
         robot = self._asset
         joint_index = [robot.joint_names.index(j) for j in jointNames]
@@ -72,7 +72,7 @@ class ActionClass(ActionTerm):
         ee_index = robot.body_names.index(eeName)
         ee_pos = robot.data.body_pos_w[:, ee_index]
 
-        robot.write_root_state_to_sim(actions[:, :13])
+        robot.write_root_velocity_to_sim(actions[:, 7:13])
         robot.write_joint_state_to_sim(actions[:, 13:16].float(), actions[:, 16:19].float(), joint_index)
         if self._env.is_catch:
             follow = [torch.stack([(ee_pos[i] + torch.tensor([0.05, 0, -0.01])), torch.tensor([0, 0, 0, 0])]) for i in range(self.num_envs)]

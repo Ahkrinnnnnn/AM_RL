@@ -1,4 +1,4 @@
-# --task Isaac-UAM-Catch-Plan-v0 --num_envs 2 --headless --video
+# --task Isaac-UAM-Catch-Plan-v0 --num_envs 2 --headless --video --video_length 2000
 
 import argparse
 import sys
