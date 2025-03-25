@@ -32,7 +32,7 @@ def robot_out_of_bounds(env: ManagerBasedRLEnv, asset_name: str, bounds: list):
         (bounds[1][0] < root_pos_w[:, 1]) & (root_pos_w[:, 1] < bounds[1][1]) &
         (bounds[2][0] < root_pos_w[:, 2]) & (root_pos_w[:, 2] < bounds[2][1])
     )
-    return ~torch.all(condition)
+    return ~condition
 
 def finish_task(env: ManagerBasedRLEnv):
     final_dist = torch.linalg.vector_norm(
@@ -74,9 +74,13 @@ class ActionClass(ActionTerm):
 
         robot.write_root_velocity_to_sim(actions[:, 7:13])
         robot.write_joint_state_to_sim(actions[:, 13:16].float(), actions[:, 16:19].float(), joint_index)
-        if self._env.is_catch:
-            follow = [torch.stack([(ee_pos[i] + torch.tensor([0.05, 0, -0.01])), torch.tensor([0, 0, 0, 0])]) for i in range(self.num_envs)]
-            obj.write_root_pose_to_sim(follow)
+        for i in range(self.num_envs):
+            if self._env.is_catch[i]:
+                print(i)
+                obj.write_root_pose_to_sim(torch.cat([
+                    (ee_pos[i] + torch.tensor([0.05, 0, -0.01], device=self._env.device)),
+                    torch.tensor([0, 0, 0, 1], device=self._env.device)
+                ]), torch.tensor([i], device=self._env.device))
         
 
     def process_actions(self, actions: torch.Tensor) -> torch.Tensor:

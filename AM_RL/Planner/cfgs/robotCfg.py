@@ -83,11 +83,14 @@ obj_CFG = RigidObjectCfg(
         root_link_name="base_link",
         joint_drive=UrdfConverterCfg.JointDriveCfg(
             gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=100.0)
+        ),
+        mass_props=sim_utils.MassPropertiesCfg(
+            density=0.01
         )
     ),
     init_state=RigidObjectCfg.InitialStateCfg(
         # pos=((random.random()-0.5)*20, (random.random()-0.5)*20, 0.1)
-        pos=(0, 3, 0.1)
+        pos=(0, -3, 0.02)
     )
 )
 

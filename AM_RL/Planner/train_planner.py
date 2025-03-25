@@ -14,6 +14,7 @@ parser.add_argument("--num_envs", type=int, default=None, help="Number of enviro
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
+parser.add_argument("--continue_training", type=str, default=None, help="Use this flag to continue training from a saved model.")
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -117,7 +118,10 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     env = MySb3VecEnvWrapper(env)
 
     # create agent from stable baselines
-    agent = TD3(CustomPlannerTD3Policy, env, verbose=1, **agent_cfg)
+    if args_cli.continue_training:
+        agent = TD3.load(args_cli.continue_training, env, verbose=1, **agent_cfg)
+    else:
+        agent = TD3(CustomPlannerTD3Policy, env, verbose=1, **agent_cfg)
     # configure the logger
     new_logger = configure(log_dir, ["stdout", "tensorboard"])
     agent.set_logger(new_logger)

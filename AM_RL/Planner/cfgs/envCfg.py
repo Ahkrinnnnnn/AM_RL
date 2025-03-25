@@ -113,8 +113,7 @@ class RewardsCfg:
     time = RewTerm(func=RewardFunctions.time_reward, weight=1)
     is_captured = RewTerm(
         func=RewardFunctions.is_captured_reward,
-        weight=1,
-        params={"asset_name": "uam", "ee_name": eeName}
+        weight=1
     )
     # collision = RewTerm(func=RewardFunctions.collision_reward, weight=1, params={"asset_name": "uam"})
     smooth = RewTerm(func=RewardFunctions.smoothness_reward, weight=1)
@@ -187,7 +186,7 @@ class CustomEnv(ManagerBasedRLEnv):
         self.last_state = None
         self.current_state = None
         self.planned = None
-        self.is_catch = False
+        self.is_catch = torch.tensor([False]*self.num_envs, device=self.device)
     
     def reset(self, seed, options):
         observation = super().reset(seed=seed, env_ids=None, options=options)
@@ -205,7 +204,7 @@ class CustomEnv(ManagerBasedRLEnv):
         
         observation, reward, terminated, truncated, info = super().step(action)
         self.current_state = observation['policy']
-        self.is_catch = torch.linalg.norm(self.current_state[:, :3]-self.current_state[:, 19:], ord=2) < 0.2
+        self.is_catch = self.is_catch & (torch.linalg.norm(RewardFunctions.get_ee_pos(self, "uam", eeName), dim=1) < 0.2)
         self.planned = action
 
         # print(f"-------o:{[observation['policy'], reward, terminated, truncated]}")
