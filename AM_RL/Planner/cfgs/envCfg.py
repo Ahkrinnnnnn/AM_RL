@@ -107,8 +107,7 @@ class RewardsCfg:
 
     ee_dist = RewTerm(
         func=RewardFunctions.ee_dist_reward,
-        weight=1,
-        params={"asset_name": "uam", "ee_name": eeName}
+        weight=1
     )
     time = RewTerm(func=RewardFunctions.time_reward, weight=1)
     is_captured = RewTerm(
@@ -184,6 +183,7 @@ class CustomEnv(ManagerBasedRLEnv):
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(19,), dtype=np.float32)
     
         self.last_state = None
+        self.last_ee = None
         self.current_state = None
         self.planned = None
         self.is_catch = torch.tensor([False]*self.num_envs, device=self.device)
@@ -193,21 +193,16 @@ class CustomEnv(ManagerBasedRLEnv):
         self.current_state = observation[0]['policy']
         observation[0]['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
 
-        # print(f"-------init o:{observation[0]['policy']}")
-
         return observation
 
     def step(self, action):
         self.last_state = self.current_state
+        self.last_ee = RewardFunctions.get_ee_pos(self, "uam", eeName)
 
-        # print(f"-------a:{action}")
-        
         observation, reward, terminated, truncated, info = super().step(action)
         self.current_state = observation['policy']
-        self.is_catch = self.is_catch & (torch.linalg.norm(RewardFunctions.get_ee_pos(self, "uam", eeName), dim=1) < 0.2)
+        self.is_catch = self.is_catch | (torch.linalg.norm(RewardFunctions.get_ee_pos(self, "uam", eeName)-self.current_state[:, 19:], dim=1, ord=2) < 0.5)
         self.planned = action
 
-        # print(f"-------o:{[observation['policy'], reward, terminated, truncated]}")
-        
         observation['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
         return observation, reward, terminated, truncated, info

@@ -76,7 +76,6 @@ class ActionClass(ActionTerm):
         robot.write_joint_state_to_sim(actions[:, 13:16].float(), actions[:, 16:19].float(), joint_index)
         for i in range(self.num_envs):
             if self._env.is_catch[i]:
-                print(i)
                 obj.write_root_pose_to_sim(torch.cat([
                     (ee_pos[i] + torch.tensor([0.05, 0, -0.01], device=self._env.device)),
                     torch.tensor([0, 0, 0, 1], device=self._env.device)

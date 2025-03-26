@@ -89,8 +89,8 @@ obj_CFG = RigidObjectCfg(
         )
     ),
     init_state=RigidObjectCfg.InitialStateCfg(
-        # pos=((random.random()-0.5)*20, (random.random()-0.5)*20, 0.1)
-        pos=(0, -3, 0.02)
+        pos=((random.random()-0.5)*20, (random.random()-0.5)*20, 0.05)
+        # pos=(0, -3, 0.05)
     )
 )
 
