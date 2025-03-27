@@ -14,7 +14,7 @@ class ControllerNetwork(MlpExtractor):
             feature_dim = 41,
             net_arch = [256, 256],
             activation_fn = nn.Tanh,
-            device = "auto"
+            device = "cpu"
         )
         self.output = nn.Sequential(
             nn.Linear(self.latent_dim_pi, 9),

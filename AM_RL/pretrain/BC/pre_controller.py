@@ -50,7 +50,7 @@ def load_data(dataset_path):
     ]) / 2
 
     action_mid = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0])
-    action_half_range = np.array([10, 10, 10, 10, 10, 10, 2, 2, 0.6]) / 2
+    action_half_range = np.array([20, 20, 20, 20, 20, 20, 3, 3, 1])
 
     np.savez(
         norm_params_save_path, 
@@ -73,15 +73,15 @@ def load_data(dataset_path):
 
     states = np.array(states)
     actions = np.array(actions)
-    states_tensor = torch.tensor((states-states_mid)/states_half_range, dtype=torch.float32)
-    actions_tensor = torch.tensor((actions-action_mid)/action_half_range, dtype=torch.float32)
+    states_tensor = torch.tensor((states-states_mid)/states_half_range, dtype=torch.float32, device="cpu")
+    actions_tensor = torch.tensor((actions-action_mid)/action_half_range, dtype=torch.float32, device="cpu")
 
     # np.set_printoptions(threshold=np.inf)
     # print(np.sum((states-states_mid)/states_range > 1))
     # print(np.max(states, axis=0))
     # print(np.min(states, axis=0))
-    # print(np.max(states, axis=0))
-    # print(np.min(states, axis=0))
+    # print(np.max(actions, axis=0))
+    # print(np.min(actions, axis=0))
 
     return states_tensor, actions_tensor
 
