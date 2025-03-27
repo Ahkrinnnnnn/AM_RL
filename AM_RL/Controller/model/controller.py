@@ -38,9 +38,9 @@ class CustomControllerPPOPolicy(MlpPolicy):
         # Note: If net_arch is None and some features extractor is used,
         #       net_arch here is an empty list and mlp_extractor does not
         #       really contain any layers (acts like an identity module).
-        self.mlp_extractor = ControllerNetwork
+        self.mlp_extractor = ControllerNetwork(pretraining=False)
 
-        pretraining_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/Controller/model/pretarining_controller.pth"
-        pretrained_dict = torch.load(pretraining_path, map_location=self.device)
+        pretraining_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/Controller/model/pretraining_controller.pth"
+        pretrained_dict = torch.load(pretraining_path, map_location=self.device, weights_only=True)
         filtered_dict = {k: v for k, v in pretrained_dict.items() if 'policy_net' in k}
         self.mlp_extractor.policy_net.load_state_dict(filtered_dict, strict=False)

@@ -112,6 +112,22 @@ class RewardsCfg:
         func=RewardFunctions.ee_dist_reward,
         weight=1
     )
+    time = RewTerm(
+        func=RewardFunctions.time_reward,
+        weight=1
+    )
+    is_captured = RewTerm(
+        func=RewardFunctions.is_captured_reward,
+        weight=1
+    )
+    task_dist = RewTerm(
+        func=RewardFunctions.task_dist_reward,
+        weight=1
+    )
+    plan_diff = RewTerm(
+        func=RewardFunctions.plan_diff_reward,
+        weight=1
+    )
 
 @configclass
 class TerminationsCfg:
@@ -188,12 +204,13 @@ class CustomEnv(ManagerBasedRLEnv):
         planner_model_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/Planner/model/2025-03-26_17-24-44/model_496000_steps.zip"
         planner = TD3.load(planner_model_path)
         self.plan_net.load_state_dict(planner.policy.actor.state_dict())
+        self.plan_net.to(self.device)
         self.plan_net.eval()
 
     
     def reset(self, seed, options):
         observation = super().reset(seed=seed, env_ids=None, options=options)
-        self.current_state = CustomFunctions.comb_obs(observation[0]['policy'])
+        self.current_state = CustomFunctions.comb_obs(self, observation[0]['policy'])
         observation[0]['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
 
         return observation
@@ -203,7 +220,7 @@ class CustomEnv(ManagerBasedRLEnv):
         self.last_ee = RewardFunctions.get_ee_pos(self, "uam", eeName)
 
         observation, reward, terminated, truncated, info = super().step(action)
-        self.current_state = CustomFunctions.comb_obs(observation['policy'])
+        self.current_state = CustomFunctions.comb_obs(self, observation['policy'])
         self.is_catch = self.is_catch | (torch.linalg.norm(RewardFunctions.get_ee_pos(self, "uam", eeName)-self.current_state[:, 19:22], dim=1, ord=2) < 0.1)
 
         observation['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)

@@ -80,7 +80,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     # directory for logging into
     run_info = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    log_root_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/Planner/logs/"
+    log_root_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/Controller/logs/"
     print(f"[INFO] Logging experiment in directory: {log_root_path}")
     print(f"Exact experiment name requested from command line: {run_info}")
     log_dir = os.path.join(log_root_path, run_info)

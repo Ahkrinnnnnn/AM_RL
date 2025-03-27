@@ -31,10 +31,11 @@ def get_ee_pos(env: ManagerBasedRLEnv, asset_name: str, ee_name: str):
     ee_index = env.scene[asset_name].body_names.index(ee_name)
     return env.scene[asset_name].data.body_pos_w[:, ee_index]
 
+
 def ee_dist_reward(env: ManagerBasedRLEnv):
     """The closer the end-effector is to the objective within two timesteps, the higher the reward."""
     last_distance = torch.linalg.norm(env.last_ee - env.last_state[:, 19:22], dim=1, ord=2)
-    current_distance = torch.linalg.norm(get_ee_pos(env, "uam", eeName) - env.current_state[:, 19:], dim=1, ord=2)
+    current_distance = torch.linalg.norm(get_ee_pos(env, "uam", eeName) - env.current_state[:, 19:22], dim=1, ord=2)
     return (current_distance - last_distance) * rewardsWeightCfg["ee_dist"]
 
 def time_reward(env: ManagerBasedRLEnv):
@@ -57,9 +58,9 @@ def plan_diff_reward(env: ManagerBasedRLEnv):
     """Penalty applied for mismatch between planned and actual position."""
     plan_diff = env.current_state[:, :19] - env.last_state[:, 22:]
     plan_diff = torch.where(torch.abs(plan_diff) < thresholdCfg["track"], torch.tensor(0.0, device=plan_diff.device), plan_diff)
-    pos_diff = plan_diff[:, :3] * rewardsWeightCfg["pos_diff"]
-    alg_diff = plan_diff[:, 3:7] * rewardsWeightCfg["alg_diff"]
-    vel_diff = plan_diff[:, 7:13] * rewardsWeightCfg["vel_diff"]
-    joint_diff = plan_diff[:, 13:16] * rewardsWeightCfg["joint_diff"]
-    joint_vel_diff = plan_diff[:, 16:19] * rewardsWeightCfg["joint_vel_diff"]
+    pos_diff = torch.linalg.norm(plan_diff[:, :3]) * rewardsWeightCfg["pos_diff"]
+    alg_diff = torch.linalg.norm(plan_diff[:, 3:7]) * rewardsWeightCfg["alg_diff"]
+    vel_diff = torch.linalg.norm(plan_diff[:, 7:13]) * rewardsWeightCfg["vel_diff"]
+    joint_diff = torch.linalg.norm(plan_diff[:, 13:16]) * rewardsWeightCfg["joint_diff"]
+    joint_vel_diff = torch.linalg.norm(plan_diff[:, 16:19]) * rewardsWeightCfg["joint_vel_diff"]
     return  pos_diff + alg_diff + vel_diff + joint_diff + joint_vel_diff

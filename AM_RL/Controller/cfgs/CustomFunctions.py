@@ -36,7 +36,7 @@ def robot_out_of_bounds(env: ManagerBasedRLEnv, asset_name: str, bounds: list):
 
 def finish_task(env: ManagerBasedRLEnv):
     final_dist = torch.linalg.vector_norm(
-        env.current_state[:, 19:]-task_point,
+        env.current_state[:, 19:22]-task_point,
         ord=2
     )
     return final_dist < thresholdCfg["task_finished"]
@@ -56,12 +56,12 @@ def deal_obs(observation, num_envs):
 def plan(env: ManagerBasedEnv, obs):
     with torch.no_grad():
         next_planning_state = torch.zeros([env.num_envs, 19], device=env.device)
-        for i in env.num_envs:
-            next_planning_state[i] = env.plan_net(obs)
+        for i in range(env.num_envs):
+            next_planning_state[i] = env.plan_net(obs[i])
     return next_planning_state
 
 def comb_obs(env: ManagerBasedEnv, obs):
-    return torch.cat([obs, plan(obs)], dim=1)
+    return torch.cat([obs, plan(env, obs)], dim=1)
 
 
 class ActionClass(ActionTerm):
@@ -86,7 +86,7 @@ class ActionClass(ActionTerm):
 
     def process_actions(self, actions: torch.Tensor) -> torch.Tensor:
         self._raw_actions = actions
-        self._processed_actions = torch.stack([inormalize_action(actions[i]) for i in range(self.num_envs)]).double()
+        self._processed_actions = torch.stack([inormalize_action(actions[i]) for i in range(self.num_envs)]).float()
 
     @property
     def action_dim(self) -> int:

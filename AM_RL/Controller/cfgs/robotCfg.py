@@ -51,6 +51,7 @@ UAM_CFG = ArticulationCfg(
     actuators={
         "propeller_actuator": ImplicitActuatorCfg(
             joint_names_expr=rotorNames,
+            effort_limit = 10.0,
             stiffness=0.1,
             damping=0.1 #
         ),
