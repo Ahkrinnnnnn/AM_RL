@@ -16,6 +16,7 @@ import AM_RL
 
 robotName = "hexacopter370_flying_arm_3"
 rotorNames = ["hexacopter370__rotor_" + str(i) + "_joint" for i in range(6)]
+rotorLinkNames = ["hexacopter370__rotor_" + str(i) for i in range(6)]
 jointNames = ["flying_arm_3__j_base_link_link_1",
     "flying_arm_3__j_link_1_link_2",
     "flying_arm_3__j_link_2_link_3"]
@@ -37,7 +38,7 @@ UAM_CFG = ArticulationCfg(
         copy_from_source=True,
         root_link_name=baseLinkName,
         joint_drive=UrdfConverterCfg.JointDriveCfg(
-            gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=100.0)
+            gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=None)
         )
     ),
     init_state=ArticulationCfg.InitialStateCfg(
@@ -84,7 +85,7 @@ obj_CFG = RigidObjectCfg(
         copy_from_source=True,
         root_link_name="base_link",
         joint_drive=UrdfConverterCfg.JointDriveCfg(
-            gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=100.0)
+            gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=None)
         ),
         mass_props=sim_utils.MassPropertiesCfg(
             density=0.01

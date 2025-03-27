@@ -78,10 +78,15 @@ class ActionClass(ActionTerm):
 
         robot = self._asset
         rotor_index = [robot.joint_names.index(j) for j in rotorNames]
+        rotor_link_index = [robot.body_names.index(l) for l in rotorLinkNames]
         joint_index = [robot.joint_names.index(j) for j in jointNames]
         all_index = rotor_index + joint_index
 
+        force = 
+        torque = torch.zeros_like(force)
+        robot.set_external_force_and_torque(force, torque, rotor_link_index)
         robot.set_joint_effort_target(actions, all_index)
+        robot.write_data_to_sim()
         
 
     def process_actions(self, actions: torch.Tensor) -> torch.Tensor:
