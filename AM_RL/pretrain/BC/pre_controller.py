@@ -6,7 +6,7 @@ import torch.optim as optim
 import numpy as np
 from torch.utils.data import DataLoader, TensorDataset, random_split
 import AM_RL
-from AM_RL.controller.model.controller import ControllerNetwork
+from AM_RL.Controller.model.controller import ControllerNetwork
 
 def load_data(dataset_path):
     try:
@@ -15,45 +15,47 @@ def load_data(dataset_path):
         raise FileNotFoundError(f"Dataset file {dataset_path} not found!")
 
     states_mid = np.array([
-        0, 0, 0,
+        0, 0, 5,
         0, 0, 0, 0,
         0, 0, 0,
         0, 0, 0,
         0, 0, 0,
         0, 0, 0,
 
-        0, 0, 0,
+        0, 0, 5,
 
-        0, 0, 0,
+        0, 0, 5,
         0, 0, 0, 0,
         0, 0, 0,
         0, 0, 0,
         0, 0, 0,
         0, 0, 0,
     ])
-    states_range = np.array([
-        20, 20, 20,
+    states_half_range = np.array([
+        20, 20, 10,
         2, 2, 2, 2,
         20, 20, 20,
         20, 20, 20, 
         3.3415926535897932, 3.3415926535897932, 3.3415926535897932,
         20, 20, 20, 
-        20, 20, 20,
-        20, 20, 20,
+        
+        20, 20, 10,
+
+        20, 20, 10,
         2, 2, 2, 2,
         20, 20, 20,
         20, 20, 20, 
         3.3415926535897932, 3.3415926535897932, 3.3415926535897932,
         20, 20, 20
-    ])
+    ]) / 2
 
     action_mid = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0])
-    action_range = np.array([10, 10, 10, 10, 10, 10, 2, 2, 0.6])
+    action_half_range = np.array([10, 10, 10, 10, 10, 10, 2, 2, 0.6]) / 2
 
     np.savez(
         norm_params_save_path, 
-        states_mid=states_mid, states_range=states_range,
-        action_mid=action_mid, action_range=action_range
+        states_mid=states_mid, states_range=states_half_range,
+        action_mid=action_mid, action_range=action_half_range
     )
 
     states, actions = [], []
@@ -65,14 +67,14 @@ def load_data(dataset_path):
                     trajectory["target_pos"],
                     trajectory["planned_path"][dx*i]), axis=0
                 )
-            if all(-1 <= x <= 1 for x in (s-states_mid)/states_range):
+            if all(-1 <= x <= 1 for x in (s-states_mid)/states_half_range):
                 states.append(s)
                 actions.append(trajectory["track_control"][i])
 
     states = np.array(states)
     actions = np.array(actions)
-    states_tensor = torch.tensor((states-states_mid)/states_range, dtype=torch.float32)
-    actions_tensor = torch.tensor((actions-action_mid)/action_range, dtype=torch.float32)
+    states_tensor = torch.tensor((states-states_mid)/states_half_range, dtype=torch.float32)
+    actions_tensor = torch.tensor((actions-action_mid)/action_half_range, dtype=torch.float32)
 
     # np.set_printoptions(threshold=np.inf)
     # print(np.sum((states-states_mid)/states_range > 1))
@@ -92,7 +94,10 @@ def train_behavior_cloning(states_tensor, actions_tensor, model, model_save_path
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
+    for param in model.value_net.parameters():
+        param.requires_grad = False
+
+    optimizer = optim.Adam(model.policy_net.parameters(), lr=1e-4)
     criterion = nn.MSELoss()
 
     for epoch in range(epochs):
@@ -129,14 +134,11 @@ def val_step(model, dataloader, criterion):
 if __name__ == "__main__":
     package_path = os.path.dirname(os.path.abspath(AM_RL.__file__))
     dataset_path = package_path + "/pretrain/dataset.npy"
-    model_save_path = package_path + "/controller/model/pretraining_controller.pth"
-    norm_params_save_path = package_path + "/controller/model/cnorm_params.npz"
+    model_save_path = package_path + "/Controller/model/pretraining_controller.pth"
+    norm_params_save_path = package_path + "/Controller/model/cnorm_params.npz"
 
     states_tensor, actions_tensor = load_data(dataset_path)
 
-    state_dim = states_tensor.shape[1]
-    action_dim = actions_tensor.shape[1]
-
-    actor_model = ControllerNetwork(state_dim, action_dim, 1)
+    actor_model = ControllerNetwork(pretraining=True)
 
     train_behavior_cloning(states_tensor, actions_tensor, actor_model, model_save_path)

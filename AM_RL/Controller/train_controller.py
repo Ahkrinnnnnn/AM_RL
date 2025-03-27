@@ -1,3 +1,5 @@
+# --task Isaac-UAM-Catch-Control-v0 --num_envs 2 --headless --video --video_length 2000
+
 import argparse
 import sys
 
@@ -5,7 +7,6 @@ from isaaclab.app import AppLauncher
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with Stable-Baselines3.")
-parser.add_argument("--test_pretrain", type=bool, default=False, help="Test the pretrained model.")
 parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
 parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
 parser.add_argument("--video_interval", type=int, default=2000, help="Interval between video recordings (in steps).")
@@ -13,6 +14,7 @@ parser.add_argument("--num_envs", type=int, default=None, help="Number of enviro
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
+parser.add_argument("--continue_training", type=str, default=None, help="Use this flag to continue training from a saved model.")
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -31,16 +33,14 @@ simulation_app = app_launcher.app
 """Rest everything follows."""
 
 import gymnasium as gym
-import numpy as np
 import os
 import random
 from datetime import datetime
 
-from isaaclab_rl.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
+from isaaclab_rl.sb3 import process_sb3_cfg
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.logger import configure
-from stable_baselines3.common.vec_env import VecNormalize
 
 from isaaclab.envs import (
     DirectMARLEnv,
@@ -51,19 +51,17 @@ from isaaclab.envs import (
 )
 from isaaclab.utils.dict import print_dict
 from isaaclab.utils.io import dump_pickle, dump_yaml
-
-import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils.hydra import hydra_task_config
+
+import AM_RL
+import AM_RL.Controller.cfgs
+from AM_RL.Controller.model.controller import CustomControllerPPOPolicy
+from AM_RL.Controller.cfgs.CustomFunctions import MySb3VecEnvWrapper
 
 
 @hydra_task_config(args_cli.task, "sb3_cfg_entry_point")
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agent_cfg: dict):
     """Train with stable-baselines agent."""
-    # if args_cli.test_pretrain == True:
-
-    #     return
-
-
     # randomly sample a seed if seed = -1
     if args_cli.seed == -1:
         args_cli.seed = random.randint(0, 10000)
@@ -82,7 +80,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     # directory for logging into
     run_info = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    log_root_path = os.path.abspath(os.path.join("logs", "sb3", args_cli.task))
+    log_root_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/Planner/logs/"
     print(f"[INFO] Logging experiment in directory: {log_root_path}")
     print(f"Exact experiment name requested from command line: {run_info}")
     log_dir = os.path.join(log_root_path, run_info)
@@ -95,7 +93,6 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # post-process agent configuration
     agent_cfg = process_sb3_cfg(agent_cfg)
     # read configurations about the agent-training
-    policy_arch = agent_cfg.pop("policy")
     n_timesteps = agent_cfg.pop("n_timesteps")
 
     # create isaac environment
@@ -118,21 +115,13 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         env = gym.wrappers.RecordVideo(env, **video_kwargs)
 
     # wrap around environment for stable baselines
-    env = Sb3VecEnvWrapper(env)
-
-    if "normalize_input" in agent_cfg:
-        env = VecNormalize(
-            env,
-            training=True,
-            norm_obs="normalize_input" in agent_cfg and agent_cfg.pop("normalize_input"),
-            norm_reward="normalize_value" in agent_cfg and agent_cfg.pop("normalize_value"),
-            clip_obs="clip_obs" in agent_cfg and agent_cfg.pop("clip_obs"),
-            gamma=agent_cfg["gamma"],
-            clip_reward=np.inf,
-        )
+    env = MySb3VecEnvWrapper(env)
 
     # create agent from stable baselines
-    agent = PPO(policy_arch, env, verbose=1, **agent_cfg)
+    if args_cli.continue_training:
+        agent = PPO.load(args_cli.continue_training, env, **agent_cfg)
+    else:
+        agent = PPO(CustomControllerPPOPolicy, env, **agent_cfg)
     # configure the logger
     new_logger = configure(log_dir, ["stdout", "tensorboard"])
     agent.set_logger(new_logger)
