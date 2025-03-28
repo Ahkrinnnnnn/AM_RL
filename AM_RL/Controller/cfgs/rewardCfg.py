@@ -4,16 +4,16 @@ from isaaclab.envs import ManagerBasedRLEnv
 from AM_RL.Controller.cfgs.robotCfg import *
 
 rewardsWeightCfg = {
-    "ee_dist": -20,
+    "ee_dist": -100,
     "time": -2,
     "is_captured": 1,
     "collision": -1000,
     "task_dist": -50,
-    "pos_diff": -0.5,
-    "alg_diff": -0.5,
-    "vel_diff": -0.5,
-    "joint_diff": -0.5,
-    "joint_vel_diff": -0.5
+    "pos_diff": -0.1,
+    "alg_diff": -0.2,
+    "vel_diff": -0.2,
+    "joint_diff": -0.1,
+    "joint_vel_diff": -0.2
 }
 thresholdCfg = {
     "track": 0.2,

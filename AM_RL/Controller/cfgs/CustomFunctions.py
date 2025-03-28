@@ -80,14 +80,12 @@ class ActionClass(ActionTerm):
         rotor_index = [robot.joint_names.index(j) for j in rotorNames]
         rotor_link_index = [robot.body_names.index(l) for l in rotorLinkNames]
         joint_index = [robot.joint_names.index(j) for j in jointNames]
-        all_index = rotor_index + joint_index
-
-        force = 
+        
+        force = torch.cat([torch.zeros(actions.shape[0], 6, 2, device=self._env.device), (actions[:, :6] * 2).unsqueeze(-1)], dim=2)
         torque = torch.zeros_like(force)
         robot.set_external_force_and_torque(force, torque, rotor_link_index)
-        robot.set_joint_effort_target(actions, all_index)
+        robot.set_joint_effort_target(actions[:, 6:9], joint_index)
         robot.write_data_to_sim()
-        
 
     def process_actions(self, actions: torch.Tensor) -> torch.Tensor:
         self._raw_actions = actions
