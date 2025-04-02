@@ -76,10 +76,7 @@ class ObservationsCfg:
         # observation terms (order preserved)
         base_pos = ObsTerm(func=mdp.observations.root_pos_w, params={"asset_cfg": SceneEntityCfg("uam")})
         base_quat = ObsTerm(func=mdp.observations.root_quat_w, params={"asset_cfg": SceneEntityCfg("uam")})
-        base_lin_vel = ObsTerm(func=mdp.observations.root_lin_vel_w, params={"asset_cfg": SceneEntityCfg("uam")})
-        base_ang_vel = ObsTerm(func=mdp.observations.root_ang_vel_w, params={"asset_cfg": SceneEntityCfg("uam")})
         joint_pos = ObsTerm(func=mdp.observations.joint_pos, params={"asset_cfg": SceneEntityCfg("uam", joint_names=jointNames)})
-        joint_vel = ObsTerm(func=mdp.observations.joint_vel, params={"asset_cfg": SceneEntityCfg("uam", joint_names=jointNames)})
         obj_pos = ObsTerm(func=mdp.observations.root_pos_w, params={"asset_cfg": SceneEntityCfg("objective")})
 
         def __post_init__(self) -> None:
@@ -115,7 +112,6 @@ class RewardsCfg:
         weight=1
     )
     # collision = RewTerm(func=RewardFunctions.collision_reward, weight=1, params={"asset_name": "uam"})
-    smooth = RewTerm(func=RewardFunctions.smoothness_reward, weight=1)
     task_dist = RewTerm(func=RewardFunctions.task_dist_reward, weight=1)
     plan_diff = RewTerm(func=RewardFunctions.plan_diff_reward, weight=1)
 
@@ -179,12 +175,13 @@ class CustomEnv(ManagerBasedRLEnv):
     def __init__(self, cfg: UamEnvCfg, render_mode: str | None = None, **kwargs):
         super().__init__(cfg, render_mode, **kwargs)
 
-        self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(22,), dtype=np.float32)
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(19,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(13,), dtype=np.float32)
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(10,), dtype=np.float32)
     
         self.last_state = None
         self.last_ee = None
         self.current_state = None
+        self.current_ee_pos = None
         self.planned = None
         self.is_catch = torch.tensor([False]*self.num_envs, device=self.device)
     
@@ -201,7 +198,11 @@ class CustomEnv(ManagerBasedRLEnv):
 
         observation, reward, terminated, truncated, info = super().step(action)
         self.current_state = observation['policy']
-        self.is_catch = self.is_catch | (torch.linalg.norm(RewardFunctions.get_ee_pos(self, "uam", eeName)-self.current_state[:, 19:], dim=1, ord=2) < 0.5)
+        self.current_ee_pos = CustomFunctions.get_end_effector_world_pose(
+            k_solver, ak_solver, 
+            self._env.current_state[:, 7:10], self._env.current_state[:, :3], self._env.current_state[:, 3:7]
+        )
+        self.is_catch = self.is_catch | (torch.linalg.norm(self.current_ee_pos, dim=1, ord=2) < 0.1)
         self.planned = action
 
         observation['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)

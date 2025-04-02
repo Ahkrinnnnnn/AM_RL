@@ -1,14 +1,16 @@
 import os
+import math
 
 import numpy as np
 import torch
-from isaaclab.envs import ManagerBasedEnv, ManagerBasedRLEnv, mdp
-from isaaclab.managers import ActionTerm, ActionTermCfg, SceneEntityCfg
+from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab_rl.sb3 import Sb3VecEnvWrapper
+from isaacsim.core.prims import Articulation
+from isaacsim.robot_motion.motion_generation import ArticulationKinematicsSolver, LulaKinematicsSolver
+from isaacsim.core.utils.rotations import euler_angles_to_quat
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 
 import AM_RL
-from AM_RL.Planner.cfgs.robotCfg import *
 from AM_RL.Planner.cfgs.rewardCfg import *
 
 norm_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/Planner/model/pnorm_params.npz"
@@ -53,51 +55,34 @@ def inormalize_action(norm_action):
 def deal_obs(observation, num_envs):
     return torch.stack([normalize_observation(observation[i]) for i in range(num_envs)]).float()
 
+def set_kinematics_solver(robot_prim_path, yaml_path, urdf_path, end_effector_name):
+    robot = Articulation(robot_prim_path)
+    kinematics_solver = LulaKinematicsSolver(
+        robot_description_path=yaml_path,
+        urdf_path=urdf_path
+    )
+    articulation_kinematics_solver = ArticulationKinematicsSolver(robot, kinematics_solver, end_effector_name)
+    return kinematics_solver, articulation_kinematics_solver
 
-class ActionClass(ActionTerm):
+def get_end_effector_world_pose(k_solver, ak_solver, joint_pos, robot_pos, robot_quat):
+    k_solver.set_robot_base_pose(robot_pos, robot_quat)
+    ee_position, ee_rotation_matrix = ak_solver.compute_end_effector_pose(joint_pos)
+    return ee_position, ee_rotation_matrix
 
-    def __init__(self, cfg: ActionTermCfg, env: ManagerBasedEnv):
-        super().__init__(cfg, env)
-        self._raw_actions = torch.zeros(self.num_envs, self.action_dim, device=self.device)
-        self._processed_actions = torch.zeros_like(self.raw_actions)
+def calculate_yaw_angle(current_quat, target_quat):
+    # Convert quaternions to Euler angles
+    current_yaw, _, _ = euler_angles_to_quat(current_quat)
+    target_yaw, _, _ = euler_angles_to_quat(target_quat)
 
-    def apply_actions(self) -> None:
-        actions = self._processed_actions
+    # Calculate yaw angle difference
+    yaw_angle_diff = target_yaw - current_yaw
 
-        # print(f"-------a:{actions}")
+    # Normalize the yaw angle difference to be within -180 to 180 degrees
+    yaw_angle_diff = math.degrees(yaw_angle_diff)
+    yaw_angle_diff = (yaw_angle_diff + 180) % 360 - 180
 
-        robot = self._asset
-        joint_index = [robot.joint_names.index(j) for j in jointNames]
-        obj = self._env.scene["objective"]
-        ee_index = robot.body_names.index(eeName)
-        ee_pos = robot.data.body_pos_w[:, ee_index]
+    return yaw_angle_diff
 
-        robot.write_root_velocity_to_sim(actions[:, 7:13])
-        robot.write_joint_state_to_sim(actions[:, 13:16].float(), actions[:, 16:19].float(), joint_index)
-        for i in range(self.num_envs):
-            if self._env.is_catch[i]:
-                obj.write_root_pose_to_sim(torch.cat([
-                    (ee_pos[i] + torch.tensor([0.05, 0, -0.01], device=self._env.device)),
-                    torch.tensor([0, 0, 0, 1], device=self._env.device)
-                ]), torch.tensor([i], device=self._env.device))
-        
-
-    def process_actions(self, actions: torch.Tensor) -> torch.Tensor:
-        self._raw_actions = actions
-        self._processed_actions = torch.stack([inormalize_action(actions[i]) for i in range(self.num_envs)]).double()
-
-    @property
-    def action_dim(self) -> int:
-        return 19
-
-    @property
-    def processed_actions(self) -> torch.Tensor:
-        return self._processed_actions
-
-    @property
-    def raw_actions(self) -> torch.Tensor:
-        return self._raw_actions
-    
 
 class MySb3VecEnvWrapper(Sb3VecEnvWrapper):
     

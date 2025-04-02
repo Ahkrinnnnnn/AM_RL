@@ -19,19 +19,13 @@ def load_data(dataset_path):
         0, 0, 5,
         0, 0, 0, 0,
         0, 0, 0,
-        0, 0, 0,
-        0, 0, 0,
-        0, 0, 0,
 
         0, 0, 5,
     ])
     states_half_range = np.array([
         20, 20, 10,
         2, 2, 2, 2,
-        20, 20, 20,
-        20, 20, 20, 
         3.3415926535897932, 3.3415926535897932, 3.3415926535897932,
-        20, 20, 20, 
         
         20, 20, 10
     ]) / 2
@@ -40,17 +34,11 @@ def load_data(dataset_path):
         0, 0, 5,
         0, 0, 0, 0,
         0, 0, 0,
-        0, 0, 0,
-        0, 0, 0,
-        0, 0, 5,
     ])
     action_half_range = np.array([
         20, 20, 10,
         2, 2, 2, 2,
-        20, 20, 20,
-        20, 20, 20, 
         3.3415926535897932, 3.3415926535897932, 3.3415926535897932,
-        20, 20, 10, 
     ]) / 2
 
     np.savez(
@@ -63,10 +51,15 @@ def load_data(dataset_path):
     for trajectory in dataset:
         for i in range(len(trajectory["planned_path"])-1):
             s = np.concatenate((
-                    trajectory["planned_path"][i],
+                    trajectory["planned_path"][i][:7],
+                    trajectory["planned_path"][i][13:16],
                     trajectory["target_pos"]), axis=0
                 )
-            a = trajectory["planned_path"][i+1]
+            a = np.concatenate((
+                    trajectory["planned_path"][i+1][:7],
+                    trajectory["planned_path"][i+1][13:16]),
+                    axis=0
+                )
             if all(-1 <= x <= 1 for x in (s-states_mid)/states_half_range):
                 states.append(s)
                 actions.append(a)
