@@ -20,21 +20,22 @@ class ActionClass(ActionTerm):
 
         robot = self._asset
         joint_index = [robot.joint_names.index(j) for j in jointNames]
-        rotor_link_index = [robot.body_names.index(l) for l in rotorLinkNames]
+        base_link_index = robot.body_names.index(baseLinkName)
         obj = self._env.scene["objective"]
 
         force, torque = pd_control(
             self._env.current_state[:, :3],
             robot.data.root_lin_vel_w,
-            robot.data.root_alg_vel_w,
+            robot.data.root_ang_vel_w,
             actions[:, :3],
             CustomFunctions.calculate_yaw_angle(
                 self._env.current_state[:, 3:7],
                 actions[:, 3:7]
             )
         )
-        robot.set_external_force_and_torque(force, torque, rotor_link_index)
-        robot.set_joint_position_target(actions[:, 7:], joint_index)
+        robot.set_external_force_and_torque(force, torque, base_link_index)
+        robot.set_joint_position_target(actions[:, 7:].float(), joint_index)
+        robot.write_data_to_sim()
 
         for i in range(self.num_envs):
             if self._env.is_catch[i]:

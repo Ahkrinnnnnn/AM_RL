@@ -1,8 +1,7 @@
 import torch
 from isaaclab.envs import ManagerBasedRLEnv
 
-from AM_RL.Planner.cfgs.robotCfg import k_solver, ak_solver
-from AM_RL.Planner.cfgs.CustomFunctions import task_point, get_end_effector_world_pose
+from AM_RL.Planner.cfgs.CustomFunctions import task_point
 
 rewardsWeightCfg = {
     "ee_dist": -20,
@@ -22,12 +21,8 @@ rewardsWeightCfg = {
 
 def ee_dist_reward(env: ManagerBasedRLEnv):
     """The closer the end-effector is to the objective within two timesteps, the higher the reward."""
-    last_distance = torch.linalg.norm(env.last_ee - env.last_state[:, 10:], dim=1, ord=2)
-    ee_pos = get_end_effector_world_pose(
-        k_solver, ak_solver, 
-        env.current_state[:, 7:10], env.current_state[:, :3], env.current_state[:, 3:7]
-    )
-    current_distance = torch.linalg.norm(ee_pos-env.current_state[:, 10:], dim=1, ord=2)
+    last_distance = torch.linalg.norm(env.last_ee-env.last_state[:, 10:], dim=1, ord=2)
+    current_distance = torch.linalg.norm(env.current_ee_pos-env.current_state[:, 10:], dim=1, ord=2)
     return (current_distance - last_distance) * rewardsWeightCfg["ee_dist"]
 
 def time_reward(env: ManagerBasedRLEnv):

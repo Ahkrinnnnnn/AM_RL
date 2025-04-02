@@ -189,20 +189,18 @@ class CustomEnv(ManagerBasedRLEnv):
     def reset(self, seed, options):
         observation = super().reset(seed=seed, env_ids=None, options=options)
         self.current_state = observation[0]['policy']
+        self.last_ee = self.current_ee_pos = CustomFunctions.get_end_effector_world_pose(self.current_state[:, 7:10], device=self.device)
         observation[0]['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
 
         return observation
 
     def step(self, action):
         self.last_state = self.current_state
-        self.last_ee = RewardFunctions.get_ee_pos(self, "uam", eeName)
+        self.last_ee = self.current_ee_pos
 
         observation, reward, terminated, truncated, info = super().step(action)
         self.current_state = observation['policy']
-        self.current_ee_pos = CustomFunctions.get_end_effector_world_pose(
-            k_solver, ak_solver, 
-            self._env.current_state[:, 7:10], self._env.current_state[:, :3], self._env.current_state[:, 3:7]
-        )
+        self.current_ee_pos = CustomFunctions.get_end_effector_world_pose(self.current_state[:, 7:10], device=self.device)
         self.is_catch = self.is_catch | (torch.linalg.norm(self.current_ee_pos, dim=1, ord=2) < 0.1)
         self.planned = action
 

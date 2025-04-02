@@ -7,7 +7,6 @@ import isaaclab.sim as sim_utils
 from isaaclab.sim.converters.urdf_converter_cfg import UrdfConverterCfg
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets import ArticulationCfg, RigidObjectCfg
-from isaacsim.core.utils.stage import add_reference_to_stage
 
 import AM_RL
 import AM_RL.Planner.cfgs.CustomFunctions as CustomFunctions
@@ -28,18 +27,10 @@ objName = "ball"
 
 rootPath = os.path.dirname(os.path.abspath(AM_RL.__file__))
 
-robot_prim_path = "{ENV_REGEX_NS}/uam"
-yaml_path = rootPath + f"/assets/yaml/supplement.yaml"
-urdf_path = rootPath + f"/assets/urdf/{robotName}.urdf"
-usd_path = rootPath + f"/assets/usd/uam/{robotName}.usd"
-
-add_reference_to_stage(usd_path=usd_path, prim_path="/World/uam")
-k_solver, ak_solver = CustomFunctions.set_kinematics_solver("/World/uam", yaml_path, urdf_path, eeName)
-
 UAM_CFG = ArticulationCfg(
-    prim_path=robot_prim_path,
+    prim_path="{ENV_REGEX_NS}/uam",
     spawn=sim_utils.UrdfFileCfg(
-        asset_path=urdf_path,
+        asset_path=rootPath + f"/assets/urdf/{robotName}.urdf",
         usd_dir=rootPath+f"/assets/usd/uam/",
         usd_file_name=f"{robotName}.usd",
         force_usd_conversion=True,
