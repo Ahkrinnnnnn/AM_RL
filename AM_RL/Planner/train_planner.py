@@ -54,7 +54,6 @@ from isaaclab.utils.io import dump_pickle, dump_yaml
 from isaaclab_tasks.utils.hydra import hydra_task_config
 
 import AM_RL
-import AM_RL.Planner.cfgs
 from AM_RL.Planner.model.planner import CustomPlannerTD3Policy
 from AM_RL.Planner.cfgs.CustomFunctions import MySb3VecEnvWrapper
 

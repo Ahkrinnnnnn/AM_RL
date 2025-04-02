@@ -17,6 +17,7 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
 
 from AM_RL.Planner.cfgs.robotCfg import *
+from AM_RL.Planner.cfgs.actionCfg import ActionClass
 import AM_RL.Planner.cfgs.CustomFunctions as CustomFunctions
 import AM_RL.Planner.cfgs.rewardCfg as RewardFunctions
 
@@ -60,7 +61,7 @@ class ActionsCfg:
     """Action specifications for the MDP."""
 
     planning_state = ActionTermCfg(
-        class_type=CustomFunctions.ActionClass,
+        class_type=ActionClass,
         asset_name="uam"
     )
 

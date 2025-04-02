@@ -39,3 +39,32 @@ cspace_to_urdf_rules:
 # not be able to avoid obstacles.
 
 collision_spheres:
+
+joint_limits:
+    flying_arm_3__j_base_link_link_1:
+        lower: -1.6707963267948966
+        upper: 1.6707963267948966
+    hexacopter370__rotor_0_joint:
+        lower: -np.inf
+        upper: np.inf
+    hexacopter370__rotor_1_joint:
+        lower: -np.inf
+        upper: np.inf
+    hexacopter370__rotor_2_joint:
+        lower: -np.inf
+        upper: np.inf
+    hexacopter370__rotor_3_joint:
+        lower: -np.inf
+        upper: np.inf
+    hexacopter370__rotor_4_joint:
+        lower: -np.inf
+        upper: np.inf
+    hexacopter370__rotor_5_joint:
+        lower: -np.inf
+        upper: np.inf
+    flying_arm_3__j_link_1_link_2:
+        lower: -1.6707963267948966
+        upper: 1.6707963267948966
+    flying_arm_3__j_link_2_link_3:
+        lower: -1.6707963267948966
+        upper: 1.6707963267948966

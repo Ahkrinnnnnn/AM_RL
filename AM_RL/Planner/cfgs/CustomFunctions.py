@@ -11,7 +11,11 @@ from isaacsim.core.utils.rotations import euler_angles_to_quat
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 
 import AM_RL
-from AM_RL.Planner.cfgs.rewardCfg import *
+
+##
+# Customize variables
+##
+
 
 norm_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/Planner/model/pnorm_params.npz"
 norm_params = np.load(norm_path)
@@ -20,6 +24,8 @@ states_mid = torch.tensor(norm_params["states_mid"], device="cuda")
 states_range = torch.tensor(norm_params["states_range"], device="cuda")
 action_mid = torch.tensor(norm_params["action_mid"], device="cuda")
 action_range = torch.tensor(norm_params["action_range"], device="cuda")
+
+task_point = torch.tensor([0, 0, 0.5], device="cuda")
 
 
 ##
