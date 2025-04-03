@@ -38,7 +38,7 @@ UAM_CFG = ArticulationCfg(
         copy_from_source=True,
         root_link_name=baseLinkName,
         joint_drive=UrdfConverterCfg.JointDriveCfg(
-            gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=100.0)
+            gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=10.0)
         )
     ),
     init_state=ArticulationCfg.InitialStateCfg(
@@ -52,22 +52,22 @@ UAM_CFG = ArticulationCfg(
     actuators={
         "propeller_actuator": ImplicitActuatorCfg(
             joint_names_expr=rotorNames,
-            stiffness=0.5,
-            damping=0.05
+            stiffness=0.1,
+            damping=0.09
         ),
         "joint_actuator": ImplicitActuatorCfg(
             joint_names_expr=jointNames[:2],
             effort_limit=1.0, 
             velocity_limit=10000.0, 
-            stiffness=10.0,
-            damping=0.05
+            stiffness=50.0,
+            damping=0.5
         ),
         "last_joint_actuator": ImplicitActuatorCfg(
-            joint_names_expr=jointNames[-1],
+            joint_names_expr=jointNames[2],
             effort_limit=0.3, 
             velocity_limit=10000.0, 
-            stiffness=10.0,
-            damping=0.05
+            stiffness=50.0,
+            damping=0.5
         )
     }
 )
@@ -90,8 +90,8 @@ obj_CFG = RigidObjectCfg(
         )
     ),
     init_state=RigidObjectCfg.InitialStateCfg(
-        pos=((random.random()-0.5)*20, (random.random()-0.5)*20, 0.05)
-        # pos=(0, -3, 0.05)
+        # pos=((random.random()-0.5)*20, (random.random()-0.5)*20, 0.05)
+        pos=(0, -3, 0.05)
     )
 )
 

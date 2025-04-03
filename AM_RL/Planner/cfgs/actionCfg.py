@@ -20,7 +20,7 @@ class ActionClass(ActionTerm):
 
         robot = self._asset
         joint_index = [robot.joint_names.index(j) for j in jointNames]
-        base_link_index = robot.body_names.index(baseLinkName)
+        rotor_link_index = [robot.body_names.index(l) for l in rotorLinkNames]
         obj = self._env.scene["objective"]
 
         force, torque = pd_control(
@@ -33,7 +33,7 @@ class ActionClass(ActionTerm):
                 actions[:, 3:7]
             )
         )
-        robot.set_external_force_and_torque(force, torque, base_link_index)
+        robot.set_external_force_and_torque(force, torque, rotor_link_index)
         robot.set_joint_position_target(actions[:, 7:].float(), joint_index)
         robot.write_data_to_sim()
 

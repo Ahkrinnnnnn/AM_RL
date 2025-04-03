@@ -149,8 +149,8 @@ def calculate_yaw_angle(current_quat, target_quat):
     target_quat = target_quat.cpu().numpy()
 
     # Convert quaternions to Euler angles
-    current_yaw = torch.tensor([quat_to_euler_angles(current_quat[i]) for i in range(len(current_quat))], device=dev)[:, 0]
-    target_yaw = torch.tensor([quat_to_euler_angles(target_quat[i]) for i in range(len(target_quat))], device=dev)[:, 0]
+    current_yaw = torch.tensor(np.array([quat_to_euler_angles(current_quat[i]) for i in range(len(current_quat))]), device=dev)[:, 0]
+    target_yaw = torch.tensor(np.array([quat_to_euler_angles(target_quat[i]) for i in range(len(target_quat))]), device=dev)[:, 0]
 
     # Calculate yaw angle difference
     yaw_angle_diff = target_yaw - current_yaw

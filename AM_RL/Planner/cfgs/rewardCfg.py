@@ -4,13 +4,13 @@ from isaaclab.envs import ManagerBasedRLEnv
 from AM_RL.Planner.cfgs.CustomFunctions import task_point
 
 rewardsWeightCfg = {
-    "ee_dist": -20,
+    "ee_dist": -30,
     "time": -2,
     "is_captured": 1,
-    "collision": -1000,
-    "task_dist": -50,
-    "plan_diff_pos": -0.5,
-    "plan_diff_alg": -0.5
+    # "collision": -1000,
+    "task_dist": -60,
+    "plan_diff_pos": -0.1,
+    "plan_diff_alg": -0.1
 }
 
 
