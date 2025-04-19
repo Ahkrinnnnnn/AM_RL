@@ -11,7 +11,7 @@ class ControllerNetwork(MlpExtractor):
 
     def __init__(self, pretraining: bool = False):
         super().__init__(
-            feature_dim = 41,
+            feature_dim = 32,
             net_arch = [256, 256],
             activation_fn = nn.Tanh,
             device = "cpu"

@@ -198,10 +198,10 @@ class CustomEnv(ManagerBasedRLEnv):
         self.is_catch = torch.tensor([False]*self.num_envs, device=self.device)
 
         self.plan_net = PlannerNetwork(
-            spaces.Box(low=-1, high=1, shape=(22,), dtype=np.float32),
-            spaces.Box(low=-1, high=1, shape=(19,), dtype=np.float32)
+            spaces.Box(low=-1, high=1, shape=(13,), dtype=np.float32),
+            spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32)
         )
-        planner_model_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/Planner/model/2025-03-26_17-24-44/model_496000_steps.zip"
+        planner_model_path = os.path.dirname(os.path.abspath(AM_RL.__file__)) + "/Planner/logs/2025-04-19_17-23-15/model_16000_steps.zip"
         planner = TD3.load(planner_model_path)
         self.plan_net.load_state_dict(planner.policy.actor.state_dict())
         self.plan_net.to(self.device)

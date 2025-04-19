@@ -55,9 +55,10 @@ def deal_obs(observation, num_envs):
 
 def plan(env: ManagerBasedEnv, obs):
     with torch.no_grad():
-        next_planning_state = torch.zeros([env.num_envs, 19], device=env.device)
+        next_planning_state = torch.zeros([env.num_envs, 10], device=env.device)
         for i in range(env.num_envs):
-            next_planning_state[i] = env.plan_net(obs[i])
+            ob = torch.cat([obs[i][:7], obs[i][13:16], obs[i][19:22]])
+            next_planning_state[i] = env.plan_net(ob)
     return next_planning_state
 
 def comb_obs(env: ManagerBasedEnv, obs):

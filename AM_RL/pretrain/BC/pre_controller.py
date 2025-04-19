@@ -26,10 +26,7 @@ def load_data(dataset_path):
 
         0, 0, 5,
         0, 0, 0, 0,
-        0, 0, 0,
-        0, 0, 0,
-        0, 0, 0,
-        0, 0, 0,
+        0, 0, 0
     ])
     states_half_range = np.array([
         20, 20, 10,
@@ -43,10 +40,7 @@ def load_data(dataset_path):
 
         20, 20, 10,
         2, 2, 2, 2,
-        20, 20, 20,
-        20, 20, 20, 
         3.3415926535897932, 3.3415926535897932, 3.3415926535897932,
-        20, 20, 20
     ]) / 2
 
     action_mid = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0])
@@ -65,7 +59,9 @@ def load_data(dataset_path):
             s = np.concatenate((
                     trajectory["track_state"][i],
                     trajectory["target_pos"],
-                    trajectory["planned_path"][dx*i]), axis=0
+                    trajectory["planned_path"][dx*i][:7],
+                    trajectory["planned_path"][dx*i][13:16]
+                    ), axis=0
                 )
             if all(-1 <= x <= 1 for x in (s-states_mid)/states_half_range):
                 states.append(s)

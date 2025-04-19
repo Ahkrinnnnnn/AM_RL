@@ -44,9 +44,7 @@ UAM_CFG = ArticulationCfg(
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.5), rot=(0.0, 0.0, 0.0, 1.0),
         joint_pos={
-            jointNames[0]: 0.0,
-            jointNames[1]: 0.0,
-            jointNames[2]: 0.0
+            ".*": 0.0
         },
     ),
     actuators={

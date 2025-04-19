@@ -44,30 +44,28 @@ UAM_CFG = ArticulationCfg(
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.1), rot=(0.0, 0.0, 0.0, 1.0),
         joint_pos={
-            jointNames[0]: 0.0,
-            jointNames[1]: 0.0,
-            jointNames[2]: 0.0
+            ".*": 0.0
         },
     ),
     actuators={
         "propeller_actuator": ImplicitActuatorCfg(
             joint_names_expr=rotorNames,
-            stiffness=0.1,
-            damping=0.09
+            stiffness=0.0,
+            damping=10.0
         ),
         "joint_actuator": ImplicitActuatorCfg(
             joint_names_expr=jointNames[:2],
             effort_limit=1.0, 
             velocity_limit=10000.0, 
-            stiffness=50.0,
-            damping=0.5
+            stiffness=200.0,
+            damping=45.0
         ),
         "last_joint_actuator": ImplicitActuatorCfg(
             joint_names_expr=jointNames[2],
             effort_limit=0.3, 
             velocity_limit=10000.0, 
-            stiffness=50.0,
-            damping=0.5
+            stiffness=200.0,
+            damping=45.0
         )
     }
 )

@@ -56,11 +56,8 @@ def task_dist_reward(env: ManagerBasedRLEnv):
 
 def plan_diff_reward(env: ManagerBasedRLEnv):
     """Penalty applied for mismatch between planned and actual position."""
-    plan_diff = env.current_state[:, :19] - env.last_state[:, 22:]
+    plan_diff = env.current_state[:, :7] - env.last_state[:, 22:]
     plan_diff = torch.where(torch.abs(plan_diff) < thresholdCfg["track"], torch.tensor(0.0, device=plan_diff.device), plan_diff)
     pos_diff = torch.linalg.norm(plan_diff[:, :3]) * rewardsWeightCfg["pos_diff"]
-    alg_diff = torch.linalg.norm(plan_diff[:, 3:7]) * rewardsWeightCfg["alg_diff"]
-    vel_diff = torch.linalg.norm(plan_diff[:, 7:13]) * rewardsWeightCfg["vel_diff"]
     joint_diff = torch.linalg.norm(plan_diff[:, 13:16]) * rewardsWeightCfg["joint_diff"]
-    joint_vel_diff = torch.linalg.norm(plan_diff[:, 16:19]) * rewardsWeightCfg["joint_vel_diff"]
-    return  pos_diff + alg_diff + vel_diff + joint_diff + joint_vel_diff
+    return  pos_diff + joint_diff
