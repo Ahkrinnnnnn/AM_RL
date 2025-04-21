@@ -95,6 +95,12 @@ class EventCfg:
     """Configuration for events."""
 
     # reset
+    pl = EventTerm(
+        func=CustomFunctions.plo,
+        mode="reset"
+    )
+
+    # reset
     reset_env = EventTerm(
         func=mdp.events.reset_scene_to_default,
         mode="reset"
@@ -187,6 +193,7 @@ class CustomEnv(ManagerBasedRLEnv):
         self.current_state = None
         self.planned = None
         self.is_catch = torch.tensor([False]*self.num_envs, device=self.device)
+        self.whole_plan = None
     
     def reset(self, seed, options):
         observation = super().reset(seed=seed, env_ids=None, options=options)
@@ -203,6 +210,11 @@ class CustomEnv(ManagerBasedRLEnv):
         self.current_state = observation['policy']
         self.is_catch = self.is_catch | (torch.linalg.norm(RewardFunctions.get_ee_pos(self, "uam", eeName)-self.current_state[:, 19:], dim=1, ord=2) < 0.5)
         self.planned = action
-
+        if self.whole_plan == None:
+            self.whole_plan = self.current_state[:, :3]
+        else:
+            self.whole_plan = torch.cat([self.whole_plan, self.current_state[:, :3]], dim=0)
+        # print("--------", self.whole_plan)
+        # CustomFunctions.plo(self)
         observation['policy'] = CustomFunctions.deal_obs(self.current_state, self.num_envs)
         return observation, reward, terminated, truncated, info

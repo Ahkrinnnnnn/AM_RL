@@ -108,3 +108,34 @@ class MySb3VecEnvWrapper(Sb3VecEnvWrapper):
         VecEnv.__init__(self, self.num_envs, observation_space, action_space)
         self._ep_rew_buf = torch.zeros(self.num_envs, device=self.sim_device)
         self._ep_len_buf = torch.zeros(self.num_envs, device=self.sim_device)
+
+
+import matplotlib.pyplot as plt
+def plo(env: ManagerBasedRLEnv, env_id):
+    if env.whole_plan == None or env.whole_plan.shape[0] <= 5:
+        return
+    whole_plan = env.whole_plan.cpu()[:70]
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    ax.plot([4.00], [1.38], [0.60], 
+            marker='*', linestyle='-', markersize=4,
+            color='green', label='Target')
+
+    ax.plot(whole_plan[:, 0], whole_plan[:, 1], whole_plan[:, 2], 
+            marker='o', linestyle='-', markersize=4,
+            color='blue', label='RL Planned Trajectory')
+        
+    ax.set_xlabel('X', fontsize=12)
+    ax.set_ylabel('Y', fontsize=12)
+    ax.set_zlabel('Z', fontsize=12)
+    
+    ax.legend(loc='upper right', fontsize=10)
+    
+    ax.set_xlim(-1, 6)
+    ax.set_ylim(-1, 4)
+    ax.set_zlim(0, 2)
+    
+    ax.view_init(elev=20, azim=30)
+    
+    plt.show()
